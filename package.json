@@ -1,0 +1,15 @@
+{
+  "name": "idphoto-server",
+  "version": "1.0.0",
+  "description": "A Node.js server to host the ID photo website.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
