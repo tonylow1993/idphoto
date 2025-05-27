@@ -94,12 +94,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // Ensure dimensions match for pixel manipulation. If not, this step needs careful scaling.
         // For simplicity, this assumes the mask's dimensions correspond to the original image's dimensions.
         // If the mask was generated from the original image, they should.
+        
+        // Apply the mask to the original image data's alpha channel with thresholding
         const len = originalImgData.data.length;
+        const threshold = 128; // Mid-point threshold for grayscale mask
+                               // Assumes mask values < threshold are background, >= threshold are foreground.
+
         for (let i = 0; i < len; i += 4) {
-            // Assuming mask is grayscale, use red channel for alpha.
-            // Mask: white (255) = opaque foreground, black (0) = transparent background.
-            const maskValue = maskImgData.data[i]; // Red channel of the mask pixel
-            originalImgData.data[i + 3] = maskValue; // Set alpha channel of original image
+            const maskValue = maskImgData.data[i]; // Red channel of the mask pixel (0-255)
+
+            if (maskValue < threshold) {
+                originalImgData.data[i + 3] = 0;   // Fully transparent (background)
+            } else {
+                originalImgData.data[i + 3] = 255; // Fully opaque (foreground)
+            }
         }
         tempCtx.putImageData(originalImgData, 0, 0); // Put modified image data back to temp canvas
 
