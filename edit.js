@@ -12,6 +12,23 @@ document.addEventListener('DOMContentLoaded', () => {
     let originalImageDataUrl = null;
     let maskDataUrl = null;
 
+    function hexToRgb(hex) {
+        let r = 0, g = 0, b = 0;
+        // 3 digits
+        if (hex.length == 4) {
+            r = parseInt(hex[1] + hex[1], 16);
+            g = parseInt(hex[2] + hex[2], 16);
+            b = parseInt(hex[3] + hex[3], 16);
+        }
+        // 6 digits
+        else if (hex.length == 7) {
+            r = parseInt(hex[1] + hex[2], 16);
+            g = parseInt(hex[3] + hex[4], 16);
+            b = parseInt(hex[5] + hex[6], 16);
+        }
+        return { r, g, b };
+    }
+
     function loadImagesFromStorage() {
         originalImageDataUrl = localStorage.getItem('originalImageUrl');
         maskDataUrl = localStorage.getItem('maskDataUrl');
@@ -84,53 +101,56 @@ document.addEventListener('DOMContentLoaded', () => {
         canvas.width = targetWidth;
         canvas.height = targetHeight;
 
-        // 1. Fill the entire canvas with the new background color
-        ctx.fillStyle = newBgColor;
+        // 2. Fill Main Canvas with New Background
+        ctx.fillStyle = newBgColor; // newBgColor is already a hex string
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // 2. Create a temporary canvas for the original image and mask processing
-        const tempCanvas = document.createElement('canvas');
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCanvas.width = originalImage.naturalWidth;
-        tempCanvas.height = originalImage.naturalHeight;
+        // 3. Prepare Original Image Data
+        const tempCanvasOriginal = document.createElement('canvas');
+        const tempCtxOriginal = tempCanvasOriginal.getContext('2d');
+        tempCanvasOriginal.width = originalImage.naturalWidth;
+        tempCanvasOriginal.height = originalImage.naturalHeight;
+        tempCtxOriginal.drawImage(originalImage, 0, 0);
+        const originalImgData = tempCtxOriginal.getImageData(0, 0, originalImage.naturalWidth, originalImage.naturalHeight);
 
-        // Draw original image onto temp canvas
-        tempCtx.drawImage(originalImage, 0, 0);
-        const originalImgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+        // 4. Prepare Mask Data
+        const tempCanvasMask = document.createElement('canvas');
+        const tempCtxMask = tempCanvasMask.getContext('2d');
+        tempCanvasMask.width = maskImage.naturalWidth;
+        tempCanvasMask.height = maskImage.naturalHeight;
+        tempCtxMask.drawImage(maskImage, 0, 0);
+        const maskImgData = tempCtxMask.getImageData(0, 0, maskImage.naturalWidth, maskImage.naturalHeight);
 
-        // Draw mask image onto another temporary canvas to get its pixel data
-        // (ensuring mask is drawn at its natural dimensions to match original)
-        const maskTempCanvas = document.createElement('canvas');
-        const maskTempCtx = maskTempCanvas.getContext('2d');
-        maskTempCanvas.width = maskImage.naturalWidth; // Use naturalWidth of the mask
-        maskTempCanvas.height = maskImage.naturalHeight; // Use naturalHeight of the mask
-        maskTempCtx.drawImage(maskImage, 0, 0, maskImage.naturalWidth, maskImage.naturalHeight);
-        const maskImgData = maskTempCtx.getImageData(0, 0, maskTempCanvas.width, maskTempCanvas.height);
+        // 5. Create Foreground Canvas & Image Data
+        const foregroundCanvas = document.createElement('canvas');
+        const fgCtx = foregroundCanvas.getContext('2d');
+        foregroundCanvas.width = originalImage.naturalWidth;
+        foregroundCanvas.height = originalImage.naturalHeight;
+        const foregroundImageData = fgCtx.createImageData(originalImage.naturalWidth, originalImage.naturalHeight);
 
-        // 3. Apply the mask to the original image data's alpha channel
-        // Ensure dimensions match for pixel manipulation. If not, this step needs careful scaling.
-        // For simplicity, this assumes the mask's dimensions correspond to the original image's dimensions.
-        // If the mask was generated from the original image, they should.
-        
-        // Apply the mask to the original image data's alpha channel with thresholding
+        // 6. Process Pixels to Create Foreground Layer
+        const threshold = 80; 
         const len = originalImgData.data.length;
-        const threshold = 128; // Mid-point threshold for grayscale mask
-                               // Assumes mask values < threshold are background, >= threshold are foreground.
-
         for (let i = 0; i < len; i += 4) {
-            const maskValue = maskImgData.data[i]; // Red channel of the mask pixel (0-255)
+            const maskValue = maskImgData.data[i]; // Red channel of mask
 
-            if (maskValue < threshold) {
-                originalImgData.data[i + 3] = 0;   // Fully transparent (background)
-            } else {
-                originalImgData.data[i + 3] = 255; // Fully opaque (foreground)
+            if (maskValue >= threshold) { // Foreground
+                foregroundImageData.data[i]   = originalImgData.data[i];   // R
+                foregroundImageData.data[i+1] = originalImgData.data[i+1]; // G
+                foregroundImageData.data[i+2] = originalImgData.data[i+2]; // B
+                foregroundImageData.data[i+3] = 255;                      // Alpha (fully opaque)
+            } else { // Background
+                foregroundImageData.data[i]   = 0; // R
+                foregroundImageData.data[i+1] = 0; // G
+                foregroundImageData.data[i+2] = 0; // B
+                foregroundImageData.data[i+3] = 0; // Alpha (fully transparent)
             }
         }
-        tempCtx.putImageData(originalImgData, 0, 0); // Put modified image data back to temp canvas
 
-        // 4. Draw the masked and processed original image onto the main canvas,
-        // scaled to fit targetWidth/targetHeight, maintaining aspect ratio and centered.
+        // 7. Put Foreground Data onto Foreground Canvas
+        fgCtx.putImageData(foregroundImageData, 0, 0);
 
+        // 8. Calculate Scaling and Draw Foreground onto Main Canvas
         const aspect = originalImage.naturalWidth / originalImage.naturalHeight;
         let drawWidth = targetWidth;
         let drawHeight = targetHeight;
@@ -144,8 +164,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const x = (targetWidth - drawWidth) / 2;
         const y = (targetHeight - drawHeight) / 2;
 
-        ctx.drawImage(tempCanvas, x, y, drawWidth, drawHeight);
-        console.log('Canvas redrawn.');
+        ctx.drawImage(foregroundCanvas, x, y, drawWidth, drawHeight);
+        console.log('Canvas redrawn with explicit compositing.');
     }
 
     // Event Listeners
