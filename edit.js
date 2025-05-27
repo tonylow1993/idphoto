@@ -1,12 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('imageCanvas');
     const ctx = canvas.getContext('2d');
-    const bgColorInput = document.getElementById('bgColor');
     const imgWidthInput = document.getElementById('imgWidth');
     const imgHeightInput = document.getElementById('imgHeight');
-    const applyButton = document.getElementById('applyButton');
-    const downloadLink = document.getElementById('downloadLink');
-    const formatSelect = document.getElementById('formatSelect');
+    const downloadButton = document.getElementById('downloadButton');
+    const bgColorRadios = document.querySelectorAll('input[name="bgColor"]');
+    const formatRadios = document.querySelectorAll('input[name="downloadFormat"]');
 
     let originalImage = null;
     let maskImage = null;
@@ -35,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     imgWidthInput.value = originalImage.naturalWidth;
                     imgHeightInput.value = originalImage.naturalHeight;
                 }
-                applyUserEdits(); // Perform an initial render
+                redrawCanvas(); // Perform an initial render
             }
         }
 
@@ -53,13 +52,31 @@ document.addEventListener('DOMContentLoaded', () => {
         return true;
     }
 
-    function applyUserEdits() {
+    function getSelectedBgColor() {
+        for (const radio of bgColorRadios) {
+            if (radio.checked) {
+                return radio.value;
+            }
+        }
+        return '#ffffff'; // Default to white if none selected (should not happen with 'checked' attribute)
+    }
+
+    function getSelectedFormat() {
+        for (const radio of formatRadios) {
+            if (radio.checked) {
+                return radio.value;
+            }
+        }
+        return 'image/png'; // Default to PNG
+    }
+
+    function redrawCanvas() {
         if (!originalImage || !maskImage || !originalImage.complete || !maskImage.complete) {
-            console.warn('Images not fully loaded yet. Aborting applyUserEdits.');
+            console.warn('Images not fully loaded yet. Aborting redrawCanvas.');
             return;
         }
 
-        const newBgColor = bgColorInput.value || '#ffffff';
+        const newBgColor = getSelectedBgColor();
         const targetWidth = parseInt(imgWidthInput.value) || originalImage.naturalWidth;
         const targetHeight = parseInt(imgHeightInput.value) || originalImage.naturalHeight;
 
@@ -128,9 +145,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const y = (targetHeight - drawHeight) / 2;
 
         ctx.drawImage(tempCanvas, x, y, drawWidth, drawHeight);
+        console.log('Canvas redrawn.');
+    }
 
-        // Make download link available
-        const selectedMimeType = formatSelect.value || 'image/png';
+    // Event Listeners
+    bgColorRadios.forEach(radio => {
+        radio.addEventListener('change', redrawCanvas);
+    });
+
+    imgWidthInput.addEventListener('blur', redrawCanvas);
+    imgHeightInput.addEventListener('blur', redrawCanvas);
+
+    downloadButton.addEventListener('click', () => {
+        // redrawCanvas(); // Optional: ensure canvas is up-to-date, but other events should handle this.
+
+        const selectedMimeType = getSelectedFormat();
         let fileExtension = '.png';
         if (selectedMimeType === 'image/jpeg') {
             fileExtension = '.jpg';
@@ -147,24 +176,18 @@ document.addEventListener('DOMContentLoaded', () => {
             dataUrl = canvas.toDataURL(selectedMimeType);
         }
         
-        downloadLink.href = dataUrl;
-        downloadLink.download = 'edited_photo' + fileExtension;
-        downloadLink.style.display = 'inline-block';
-        console.log('Edits applied. Canvas updated for format:', selectedMimeType);
-    }
-
-    // Event Listeners
-    applyButton.addEventListener('click', applyUserEdits);
-
-    // Optional: Apply changes as inputs change (debounced or throttled for performance)
-    // bgColorInput.addEventListener('input', applyUserEdits);
-    // imgWidthInput.addEventListener('change', applyUserEdits); // 'change' fires after losing focus or Enter
-    // imgHeightInput.addEventListener('change', applyUserEdits);
-
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = 'edited_photo' + fileExtension;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        console.log('Image download initiated for format:', selectedMimeType);
+    });
 
     // --- Initialization ---
     if (loadImagesFromStorage()) {
-        // Images will be loaded, and applyUserEdits will be called by onImageLoad
+        // Images will be loaded, and redrawCanvas will be called by onImageLoad
         console.log("Image loading initiated...");
     }
 });
