@@ -28,101 +28,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 
-  // Placeholder for Azure ML Florence-2 API endpoint
-  const FLORENCE_API_ENDPOINT = 'YOUR_AZURE_ML_FLORENCE_2_API_ENDPOINT_HERE';
-  // Placeholder for API key if required
-  const API_KEY = 'YOUR_API_KEY_HERE';
-
   function processImage(file) {
     const reader = new FileReader();
-    reader.onload = async (e) => {
+    reader.onload = (e) => {
       const originalImageUrl = e.target.result;
       console.log('Original image loaded:', originalImageUrl.substring(0, 50) + '...');
 
-      try {
-        // Call Florence-2 API to get the alpha mask
-        const alphaMaskBlob = await callFlorence2Api(originalImageUrl);
-        console.log('Alpha mask received (simulated or actual API):', alphaMaskBlob);
+      const mockMaskUrl = 'https://gokaygokay-florence-2.hf.space/file=/tmp/gradio/5014b8adad6cde41e40a0905d4a421b6a5e020ce/image.webp';
 
-        // Convert alphaMaskBlob to Data URL and redirect
-        const maskReader = new FileReader();
-        maskReader.onloadend = () => {
-          const maskDataUrl = maskReader.result;
-          localStorage.setItem('originalImageUrl', originalImageUrl);
-          localStorage.setItem('maskDataUrl', maskDataUrl);
-          console.log('Stored originalImageUrl and maskDataUrl in localStorage. Redirecting to edit.html...');
-          window.location.href = 'edit.html';
-        };
-        maskReader.readAsDataURL(alphaMaskBlob);
-
-        // Old logic (commented out):
-        // const processedImageUrl = await applyMaskAndChangeBackground(originalImageUrl, alphaMaskBlob, 'blue');
-        // console.log('Image with new background and resized:', processedImageUrl.substring(0, 50) + '...');
-        // displayProcessedImage(processedImageUrl);
-
-      } catch (error) {
-        console.error('Error in image processing pipeline:', error);
-        // Fallback to local simulation is no longer needed here as processing is moved
-        // simulateLocalImageProcessing(originalImageUrl, 'blue', (processedImageUrl) => {
-        //   console.log('Image processed locally (fallback):', processedImageUrl.substring(0, 50) + '...');
-        //   displayProcessedImage(processedImageUrl);
-        // });
-      }
+      localStorage.setItem('originalImageUrl', originalImageUrl);
+      localStorage.setItem('maskDataUrl', mockMaskUrl); // Note: 'maskDataUrl' now stores a URL string
+      console.log('Stored originalImageUrl (DataURL) and maskDataUrl (URL string) in localStorage. Redirecting to edit.html...');
+      window.location.href = 'edit.html';
+    };
+    reader.onerror = (error) => {
+        console.error('Error reading file:', error);
+        alert('Error reading file. Please try again.');
     };
     reader.readAsDataURL(file);
-  }
-
-  async function callFlorence2Api(imageUrl) {
-    // This is a placeholder for the actual API call to get the alpha mask.
-    // The API is expected to return binary data (e.g., a PNG or grayscale image)
-    // representing the alpha mask.
-
-    if (FLORENCE_API_ENDPOINT === 'YOUR_AZURE_ML_FLORENCE_2_API_ENDPOINT_HERE') {
-      console.warn('Florence-2 API endpoint is a placeholder. Simulating alpha mask generation locally.');
-      // Simulate an alpha mask (e.g., a black image with a white silhouette)
-      return new Promise(resolve => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          canvas.width = img.width;
-          canvas.height = img.height;
-
-          // Create a simple circular mask for simulation
-          ctx.fillStyle = 'black'; // Background is black (transparent)
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.fillStyle = 'white'; // Foreground is white (opaque)
-          ctx.beginPath();
-          ctx.arc(canvas.width / 2, canvas.height / 2, Math.min(canvas.width, canvas.height) / 3, 0, Math.PI * 2);
-          ctx.fill();
-
-          canvas.toBlob(blob => resolve(blob), 'image/png');
-        };
-        img.src = imageUrl; // Use original image dimensions for mask
-      });
-    }
-
-    try {
-      const response = await fetch(FLORENCE_API_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json', // Or 'image/jpeg', 'image/png' depending on API input
-          // 'Authorization': `Bearer ${API_KEY}`,
-        },
-        body: JSON.stringify({ image: imageUrl }), // Send image as base64 string
-      });
-
-      if (!response.ok) {
-        throw new Error(`API call failed with status: ${response.status}`);
-      }
-
-      // Assuming the API returns binary data (e.g., image/png for the mask)
-      return await response.blob();
-
-    } catch (error) {
-      console.error('Error calling Florence-2 API:', error);
-      throw error;
-    }
   }
 
   // function applyMaskAndChangeBackground(originalImageUrl, alphaMaskBlob, newBackgroundColor) {

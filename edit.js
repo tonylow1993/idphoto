@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const imgHeightInput = document.getElementById('imgHeight');
     const applyButton = document.getElementById('applyButton');
     const downloadLink = document.getElementById('downloadLink');
+    const formatSelect = document.getElementById('formatSelect');
 
     let originalImage = null;
     let maskImage = null;
@@ -46,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
         maskImage = new Image();
         maskImage.onload = onImageLoad;
         maskImage.onerror = () => { alert('Error loading mask image.'); };
+        maskImage.crossOrigin = "Anonymous"; // Add this line
         maskImage.src = maskDataUrl;
         
         return true;
@@ -120,11 +122,27 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.drawImage(tempCanvas, x, y, drawWidth, drawHeight);
 
         // Make download link available
-        const dataUrl = canvas.toDataURL('image/png');
+        const selectedMimeType = formatSelect.value || 'image/png';
+        let fileExtension = '.png';
+        if (selectedMimeType === 'image/jpeg') {
+            fileExtension = '.jpg';
+        } else if (selectedMimeType === 'image/webp') {
+            fileExtension = '.webp';
+        }
+
+        let dataUrl;
+        if (selectedMimeType === 'image/jpeg') {
+            dataUrl = canvas.toDataURL(selectedMimeType, 0.9); // 90% quality for JPEG
+        } else if (selectedMimeType === 'image/webp') {
+            dataUrl = canvas.toDataURL(selectedMimeType, 0.8); // 80% quality for WebP
+        } else { // PNG or any other format
+            dataUrl = canvas.toDataURL(selectedMimeType);
+        }
+        
         downloadLink.href = dataUrl;
-        downloadLink.download = 'edited_photo.png';
+        downloadLink.download = 'edited_photo' + fileExtension;
         downloadLink.style.display = 'inline-block';
-        console.log('Edits applied. Canvas updated.');
+        console.log('Edits applied. Canvas updated for format:', selectedMimeType);
     }
 
     // Event Listeners
