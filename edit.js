@@ -6,6 +6,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const downloadButton = document.getElementById('downloadButton');
     const bgColorRadios = document.querySelectorAll('input[name="bgColor"]');
     const formatRadios = document.querySelectorAll('input[name="downloadFormat"]');
+    const reuploadButton = document.getElementById('reuploadButton');
+
+    const reuploadFileInput = document.createElement('input');
+    reuploadFileInput.type = 'file';
+    reuploadFileInput.accept = 'image/*';
+    reuploadFileInput.style.display = 'none';
+    document.body.appendChild(reuploadFileInput);
 
     let originalImage = null;
     let originalImageDataUrl = null;
@@ -213,4 +220,41 @@ document.addEventListener('DOMContentLoaded', () => {
         // Images will be loaded, and redrawCanvas will be called by onImageLoad
         console.log("Image loading initiated...");
     }
+
+    if (reuploadButton) { 
+        reuploadButton.addEventListener('click', () => {
+            reuploadFileInput.click(); 
+        });
+    }
+
+    reuploadFileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const newOriginalImageUrl = e.target.result;
+                
+                localStorage.setItem('originalImageUrl', newOriginalImageUrl);
+                
+                originalImage = new Image(); 
+                originalImage.onload = () => {
+                    console.log('Re-uploaded image loaded successfully.');
+                    if (imgWidthInput && imgHeightInput) {
+                        imgWidthInput.value = originalImage.naturalWidth;
+                        imgHeightInput.value = originalImage.naturalHeight;
+                    }
+                    redrawCanvas(); 
+                };
+                originalImage.onerror = () => {
+                    alert('Error loading re-uploaded image. Please try a different file.');
+                };
+                originalImage.src = newOriginalImageUrl;
+            };
+            reader.onerror = () => {
+                alert('Error reading the re-uploaded file.');
+            };
+            reader.readAsDataURL(file);
+        }
+        reuploadFileInput.value = null; 
+    });
 });
