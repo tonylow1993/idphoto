@@ -8,45 +8,59 @@ document.addEventListener('DOMContentLoaded', () => {
     const formatRadios = document.querySelectorAll('input[name="downloadFormat"]');
 
     let originalImage = null;
-    let maskImage = null;
     let originalImageDataUrl = null;
-    let maskDataUrl = null;
+    let segmentationPolygons = null; // New global variable for polygon data
 
-    function hexToRgb(hex) {
-        let r = 0, g = 0, b = 0;
-        // 3 digits
-        if (hex.length == 4) {
-            r = parseInt(hex[1] + hex[1], 16);
-            g = parseInt(hex[2] + hex[2], 16);
-            b = parseInt(hex[3] + hex[3], 16);
-        }
-        // 6 digits
-        else if (hex.length == 7) {
-            r = parseInt(hex[1] + hex[2], 16);
-            g = parseInt(hex[3] + hex[4], 16);
-            b = parseInt(hex[5] + hex[6], 16);
-        }
-        return { r, g, b };
-    }
+    // hexToRgb can be removed if not used elsewhere, ctx.fillStyle accepts hex directly.
+    // function hexToRgb(hex) { ... } 
 
     function loadImagesFromStorage() {
         originalImageDataUrl = localStorage.getItem('originalImageUrl');
-        maskDataUrl = localStorage.getItem('maskDataUrl');
+        const segmentationJsonString = localStorage.getItem('segmentationData');
 
-        if (!originalImageDataUrl || !maskDataUrl) {
-            alert('Error: Image data not found. Please upload an image first.');
+        if (!originalImageDataUrl) {
+            alert('Error: Original image data not found. Please upload an image first.');
+            window.location.href = 'index.html';
+            return false;
+        }
+        if (!segmentationJsonString) {
+            alert('Error: Segmentation data not found. Please upload an image again.');
             window.location.href = 'index.html';
             return false;
         }
 
-        let imagesLoaded = 0;
-        const totalImages = 2;
+        try {
+            const parsedData = JSON.parse(segmentationJsonString);
+            // Assuming the structure is {"<REGION_TO_SEGMENTATION>": {"polygons": [[[x,y,x,y,...]],...]}}
+            // The key "<REGION_TO_SEGMENTATION>" might vary or be absent if the JSON directly contains polygons.
+            // For this implementation, we'll look for a "polygons" key at the top level or nested.
+            if (parsedData.polygons) {
+                 segmentationPolygons = parsedData.polygons;
+            } else if (parsedData["<REGION_TO_SEGMENTATION>"]?.polygons) {
+                 segmentationPolygons = parsedData["<REGION_TO_SEGMENTATION>"].polygons;
+            } else {
+                throw new Error("Polygons key not found in segmentation data");
+            }
 
-        function onImageLoad() {
-            imagesLoaded++;
-            if (imagesLoaded === totalImages) {
-                console.log('Original and mask images loaded into Image objects.');
-                // Set initial dimensions in input fields from original image
+            if (!Array.isArray(segmentationPolygons) || segmentationPolygons.length === 0) {
+                console.error('Invalid or empty segmentation polygons:', segmentationPolygons);
+                alert('Error: Invalid or empty segmentation data. Please try again.');
+                // Potentially redirect or offer to re-upload: window.location.href = 'index.html';
+                return false; 
+            }
+            console.log("Segmentation polygons loaded and parsed:", segmentationPolygons);
+        } catch (error) {
+            console.error('Error parsing segmentation data:', error);
+            alert('Error: Could not parse segmentation data. Please try again.');
+            window.location.href = 'index.html';
+            return false;
+        }
+
+        let originalImageLoaded = false;
+
+        function checkLoadCompletion() {
+            if (originalImageLoaded && segmentationPolygons) {
+                console.log('Original image loaded and segmentation data ready.');
                 if (originalImage) {
                     imgWidthInput.value = originalImage.naturalWidth;
                     imgHeightInput.value = originalImage.naturalHeight;
@@ -56,17 +70,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         originalImage = new Image();
-        originalImage.onload = onImageLoad;
+        originalImage.onload = () => {
+            originalImageLoaded = true;
+            checkLoadCompletion();
+        };
         originalImage.onerror = () => { alert('Error loading original image.'); };
         originalImage.src = originalImageDataUrl;
-
-        maskImage = new Image();
-        maskImage.onload = onImageLoad;
-        maskImage.onerror = () => { alert('Error loading mask image.'); };
-        maskImage.crossOrigin = "Anonymous"; // Add this line
-        maskImage.src = maskDataUrl;
         
-        return true;
+        return true; // Indicates that loading process has started
     }
 
     function getSelectedBgColor() {
@@ -88,8 +99,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function redrawCanvas() {
-        if (!originalImage || !maskImage || !originalImage.complete || !maskImage.complete) {
-            console.warn('Images not fully loaded yet. Aborting redrawCanvas.');
+        // A. Inputs & Basic Setup
+        if (!originalImage || !originalImage.complete || !segmentationPolygons) {
+            console.warn('Original image or segmentation polygons not ready. Aborting redrawCanvas.');
             return;
         }
 
@@ -97,60 +109,51 @@ document.addEventListener('DOMContentLoaded', () => {
         const targetWidth = parseInt(imgWidthInput.value) || originalImage.naturalWidth;
         const targetHeight = parseInt(imgHeightInput.value) || originalImage.naturalHeight;
 
-        // Set canvas dimensions
         canvas.width = targetWidth;
         canvas.height = targetHeight;
 
-        // 2. Fill Main Canvas with New Background
-        ctx.fillStyle = newBgColor; // newBgColor is already a hex string
+        // B. Fill Main Canvas with Background Color
+        ctx.fillStyle = newBgColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // 3. Prepare Original Image Data
-        const tempCanvasOriginal = document.createElement('canvas');
-        const tempCtxOriginal = tempCanvasOriginal.getContext('2d');
-        tempCanvasOriginal.width = originalImage.naturalWidth;
-        tempCanvasOriginal.height = originalImage.naturalHeight;
-        tempCtxOriginal.drawImage(originalImage, 0, 0);
-        const originalImgData = tempCtxOriginal.getImageData(0, 0, originalImage.naturalWidth, originalImage.naturalHeight);
+        // C. Create Polygon Mask Canvas (`polyMaskCanvas`)
+        const polyMaskCanvas = document.createElement('canvas');
+        polyMaskCanvas.width = originalImage.naturalWidth;
+        polyMaskCanvas.height = originalImage.naturalHeight;
+        const polyMaskCtx = polyMaskCanvas.getContext('2d');
+        polyMaskCtx.fillStyle = 'white'; // Color to draw the mask shapes
 
-        // 4. Prepare Mask Data
-        const tempCanvasMask = document.createElement('canvas');
-        const tempCtxMask = tempCanvasMask.getContext('2d');
-        tempCanvasMask.width = maskImage.naturalWidth;
-        tempCanvasMask.height = maskImage.naturalHeight;
-        tempCtxMask.drawImage(maskImage, 0, 0);
-        const maskImgData = tempCtxMask.getImageData(0, 0, maskImage.naturalWidth, maskImage.naturalHeight);
-
-        // 5. Create Foreground Canvas & Image Data
-        const foregroundCanvas = document.createElement('canvas');
-        const fgCtx = foregroundCanvas.getContext('2d');
-        foregroundCanvas.width = originalImage.naturalWidth;
-        foregroundCanvas.height = originalImage.naturalHeight;
-        const foregroundImageData = fgCtx.createImageData(originalImage.naturalWidth, originalImage.naturalHeight);
-
-        // 6. Process Pixels to Create Foreground Layer
-        const threshold = 50; 
-        const len = originalImgData.data.length;
-        for (let i = 0; i < len; i += 4) {
-            const maskValue = maskImgData.data[i]; // Red channel of mask
-
-            if (maskValue >= threshold) { // Foreground
-                foregroundImageData.data[i]   = originalImgData.data[i];   // R
-                foregroundImageData.data[i+1] = originalImgData.data[i+1]; // G
-                foregroundImageData.data[i+2] = originalImgData.data[i+2]; // B
-                foregroundImageData.data[i+3] = 255;                      // Alpha (fully opaque)
-            } else { // Background
-                foregroundImageData.data[i]   = 0; // R
-                foregroundImageData.data[i+1] = 0; // G
-                foregroundImageData.data[i+2] = 0; // B
-                foregroundImageData.data[i+3] = 0; // Alpha (fully transparent)
+        // The segmentationPolygons is expected to be an array of "polyLists".
+        // Each "polyList" is an array of actual polygons.
+        // Each "polygon" is a flat array of coordinates [x1, y1, x2, y2, ...].
+        segmentationPolygons.forEach(polyList => {
+            if (Array.isArray(polyList)) {
+                polyList.forEach(polygon => {
+                    if (Array.isArray(polygon) && polygon.length >= 6) { // Need at least 3 points for a polygon
+                        polyMaskCtx.beginPath();
+                        polyMaskCtx.moveTo(polygon[0], polygon[1]);
+                        for (let j = 2; j < polygon.length; j += 2) {
+                            polyMaskCtx.lineTo(polygon[j], polygon[j + 1]);
+                        }
+                        polyMaskCtx.closePath();
+                        polyMaskCtx.fill();
+                    }
+                });
             }
-        }
+        });
+        
+        // D. Isolate Foreground using Polygon Mask
+        const tempOriginalCanvas = document.createElement('canvas');
+        tempOriginalCanvas.width = originalImage.naturalWidth;
+        tempOriginalCanvas.height = originalImage.naturalHeight;
+        const tempOriginalCtx = tempOriginalCanvas.getContext('2d');
+        
+        tempOriginalCtx.drawImage(originalImage, 0, 0); // Draw original image
+        tempOriginalCtx.globalCompositeOperation = 'destination-in'; // Keep parts of original that overlap with mask
+        tempOriginalCtx.drawImage(polyMaskCanvas, 0, 0); // Apply polygon mask
+        tempOriginalCtx.globalCompositeOperation = 'source-over'; // Reset composite operation
 
-        // 7. Put Foreground Data onto Foreground Canvas
-        fgCtx.putImageData(foregroundImageData, 0, 0);
-
-        // 8. Calculate Scaling and Draw Foreground onto Main Canvas
+        // E. Draw Scaled Foreground to Main Canvas
         const aspect = originalImage.naturalWidth / originalImage.naturalHeight;
         let drawWidth = targetWidth;
         let drawHeight = targetHeight;
@@ -164,8 +167,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const x = (targetWidth - drawWidth) / 2;
         const y = (targetHeight - drawHeight) / 2;
 
-        ctx.drawImage(foregroundCanvas, x, y, drawWidth, drawHeight);
-        console.log('Canvas redrawn with explicit compositing.');
+        ctx.drawImage(tempOriginalCanvas, x, y, drawWidth, drawHeight);
+        console.log('Canvas redrawn with polygon-based masking.');
     }
 
     // Event Listeners
