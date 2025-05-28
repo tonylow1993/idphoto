@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const foregroundImageData = fgCtx.createImageData(originalImage.naturalWidth, originalImage.naturalHeight);
 
         // 6. Process Pixels to Create Foreground Layer
-        const threshold = 80; 
+        const threshold = 50; 
         const len = originalImgData.data.length;
         for (let i = 0; i < len; i += 4) {
             const maskValue = maskImgData.data[i]; // Red channel of mask
