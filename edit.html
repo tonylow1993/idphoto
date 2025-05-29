@@ -1,70 +1,207 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="" />
+    <link
+      rel="stylesheet"
+      as="style"
+      onload="this.rel='stylesheet'"
+      href="https://fonts.googleapis.com/css2?display=swap&amp;family=Inter%3Awght%40400%3B500%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900"
+    />
     <title>Edit Photo</title>
+    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <style>
-        body { font-family: Inter, "Noto Sans", sans-serif; margin: 0; background-color: #f0f2f5; display: flex; flex-direction: column; min-height: 100vh; }
-        .header { background-color: #ffffff; border-bottom: 1px solid #e5e7eb; padding: 1rem 2.5rem; display: flex; align-items: center; }
-        .header-title { font-size: 1.25rem; font-weight: bold; color: #111418; }
-        .container { max-width: 960px; margin: 2rem auto; padding: 2rem; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; padding: 1rem; border-radius: 6px; background-color: #f9fafb;}
-        .control-group { display: flex; flex-direction: column; gap: 0.5rem; }
-        label { font-weight: 500; color: #374151; }
-        input[type='color'] { width: 100%; height: 40px; border-radius: 4px; border: 1px solid #d1d5db; cursor: pointer; }
-        input[type='number'] { width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #d1d5db; }
-        button {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.2s;
-            text-align: center;
+        #imageCanvas {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain; /* Scales while maintaining aspect ratio */
+            display: block; /* Prevents extra space below canvas */
         }
-        .btn-primary { background-color: #0c7ff2; color: white; }
-        .btn-primary:hover { background-color: #0a6fdb; }
-        .btn-secondary { background-color: #6c757d; color: white; }
-        .btn-secondary:hover { background-color: #5a6268; }
-        #imageCanvasContainer { margin-bottom: 1.5rem; display: flex; justify-content: center; align-items: center; border: 1px dashed #d1d5db; min-height: 300px; background-color: #f9fafb; padding: 10px; }
-        #imageCanvas { max-width: 100%; max-height: 500px; object-fit: contain; }
-        .actions { display: flex; justify-content: center; gap: 1rem; margin-top: 1rem;}
+        #imageCanvasContainer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+             background-color: #e5e7eb; /* A light gray background for the canvas area */
+        }
+        /* Ensure radio buttons are clickable across the entire label surface if needed */
+        label > input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
     </style>
-</head>
-<body>
-
-    <header class="header">
-        <h1 class="header-title">Photo Editor</h1>
-    </header>
-
-    <div class="container">
-        <div class="controls">
-            <div class="control-group">
-                <label for="bgColor">Background Color:</label>
-                <input type="color" id="bgColor" value="#ffffff">
+  </head>
+  <body>
+    <div class="relative flex size-full min-h-screen flex-col bg-white group/design-root overflow-x-hidden" style='font-family: Inter, "Noto Sans", sans-serif;'>
+      <div class="layout-container flex h-full grow flex-col">
+        <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#f1f2f4] px-10 py-3">
+          <div class="flex items-center gap-4 text-[#121416]">
+            <div class="size-4">
+              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g clip-path="url(#clip0_6_330)">
+                  <path
+                    fill-rule="evenodd"
+                    clip-rule="evenodd"
+                    d="M24 0.757355L47.2426 24L24 47.2426L0.757355 24L24 0.757355ZM21 35.7574V12.2426L9.24264 24L21 35.7574Z"
+                    fill="currentColor"
+                  ></path>
+                </g>
+                <defs>
+                  <clipPath id="clip0_6_330"><rect width="48" height="48" fill="white"></rect></clipPath>
+                </defs>
+              </svg>
             </div>
-            <div class="control-group">
-                <label for="imgWidth">Width (px):</label>
-                <input type="number" id="imgWidth" placeholder="e.g., 600">
+            <h2 class="text-[#121416] text-lg font-bold leading-tight tracking-[-0.015em]">Photo Studio</h2>
+          </div>
+          <div class="flex flex-1 justify-end items-center gap-8"> <!-- Added items-center -->
+            <div class="flex items-center gap-9">
+              <a class="text-[#121416] text-sm font-medium leading-normal" href="/" title="Home">Home</a>
+              <a class="text-[#121416] text-sm font-medium leading-normal" href="#">Pricing</a>
+              <a class="text-[#121416] text-sm font-medium leading-normal" href="#">Contact</a>
             </div>
-            <div class="control-group">
-                <label for="imgHeight">Height (px):</label>
-                <input type="number" id="imgHeight" placeholder="e.g., 600">
+            <button
+              class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-[#dce8f3] text-[#121416] text-sm font-bold leading-normal tracking-[0.015em] hover:bg-[#c9d8e7]"
+              onclick="window.location.href='index.html'"
+              title="Upload another photo"
+            >
+              <span class="truncate">Upload</span>
+            </button>
+            <div
+              class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
+              style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCQpyFGo_e-Az0xnwSu6_aoFIQ3_vRubvoATPmREgRvuwVHY7ZN9UbfVZ9KWpGhoP6YQn6GOfL1wcvN264dGaa-vgaYmKVk-dVTjwzuYAxl2zKnKeMWDG37ZEPrfzuYO5AQUg2cdKvQ_BJy-B_fpJBRrFUBO-R_WgaM9BZoJceJ8BeP47Aaf52hsJZfWupnDgwiTJBQ7TcFnowERL52XgbcTnmrQnkM66x4gRkvYL5HVxOCflBhnDOzwns5mklUuzw7qQEviF8XvXQ");'
+              title="User profile"
+            ></div>
+          </div>
+        </header>
+        <div class="px-4 sm:px-10 md:px-20 lg:px-40 flex flex-1 justify-center py-5 bg-slate-50"> <!-- Responsive padding, bg color -->
+          <div class="layout-content-container flex flex-col w-full max-w-[960px] flex-1 bg-white p-4 sm:p-6 rounded-lg shadow-lg">
+            <div class="flex flex-wrap justify-between items-center gap-3 p-2 sm:p-4 border-b border-gray-200 mb-4">
+                <p class="text-[#121416] tracking-light text-2xl sm:text-3xl font-bold leading-tight">Edit Your Photo</p>
             </div>
+            
+            <div class="flex w-full h-[300px] sm:h-[400px] md:h-[450px] bg-transparent @container rounded-xl mb-4 sm:mb-6 justify-center items-center">
+              <div id="imageCanvasContainer" class="rounded-lg" style="width:100%; height:100%; max-width:100%; max-height:100%;">
+                <canvas id="imageCanvas"></canvas> 
+              </div>
+            </div>
+            
+            <div class="flex px-4 py-3 justify-center border-b border-gray-200 mb-4"> <!-- Added border and margin -->
+                <button
+                    id="reuploadButton" <!-- ADDED ID HERE -->
+                    class="flex min-w-[84px] max-w-[320px] sm:max-w-[480px] w-full sm:w-auto cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-[#e9edf1] hover:bg-[#dce4ec] text-[#111518] text-sm font-bold leading-normal tracking-[0.015em] transition-colors"
+                >
+                    <span class="truncate">Re-upload Photo</span>
+                </button>
+            </div>
+            <h3 class="text-[#121416] text-md sm:text-lg font-bold leading-tight tracking-[-0.015em] px-2 sm:px-4 pb-2 pt-2 sm:pt-4">Background Color</h3>
+            <div class="flex flex-wrap gap-3 sm:gap-5 p-2 sm:p-4">
+              <label
+                class="relative size-8 sm:size-10 rounded-full border border-[#dde1e3] ring-offset-2 ring-sky-400 has-[:checked]:border-[3px] has-[:checked]:border-white has-[:checked]:ring-2 cursor-pointer transition-all"
+                style="background-color: rgb(255, 255, 255);"
+                title="White"
+              >
+                <input type="radio" name="bgColor" value="#FFFFFF" checked />
+              </label>
+              <label
+                class="relative size-8 sm:size-10 rounded-full border border-[#dde1e3] ring-offset-2 ring-sky-400 has-[:checked]:border-[3px] has-[:checked]:border-white has-[:checked]:ring-2 cursor-pointer transition-all"
+                style="background-color: rgb(224, 247, 250);"
+                title="Light Blue"
+              >
+                <input type="radio" name="bgColor" value="#E0F7FA" />
+              </label>
+              <label
+                class="relative size-8 sm:size-10 rounded-full border border-[#dde1e3] ring-offset-2 ring-sky-400 has-[:checked]:border-[3px] has-[:checked]:border-white has-[:checked]:ring-2 cursor-pointer transition-all"
+                style="background-color: rgb(255, 243, 224);"
+                title="Light Orange"
+              >
+                <input type="radio" name="bgColor" value="#FFF3E0" />
+              </label>
+              <label
+                class="relative size-8 sm:size-10 rounded-full border border-[#dde1e3] ring-offset-2 ring-sky-400 has-[:checked]:border-[3px] has-[:checked]:border-white has-[:checked]:ring-2 cursor-pointer transition-all"
+                style="background-color: rgb(252, 228, 236);"
+                title="Light Pink"
+              >
+                <input type="radio" name="bgColor" value="#FCE4EC" />
+              </label>
+              <label
+                class="relative size-8 sm:size-10 rounded-full border border-[#dde1e3] ring-offset-2 ring-sky-400 has-[:checked]:border-[3px] has-[:checked]:border-white has-[:checked]:ring-2 cursor-pointer transition-all"
+                style="background-color: rgb(232, 234, 246);"
+                title="Light Purple"
+              >
+                <input type="radio" name="bgColor" value="#E8EAF6" />
+              </label>
+              <label
+                class="relative size-8 sm:size-10 rounded-full border border-[#dde1e3] ring-offset-2 ring-sky-400 has-[:checked]:border-[3px] has-[:checked]:border-white has-[:checked]:ring-2 cursor-pointer transition-all"
+                style="background-color: rgb(0, 0, 0);"
+                title="Black"
+              >
+                <input type="radio" name="bgColor" value="#000000" />
+              </label>
+            </div>
+            
+            <h3 class="text-[#121416] text-md sm:text-lg font-bold leading-tight tracking-[-0.015em] px-2 sm:px-4 pb-2 pt-2 sm:pt-4">Adjust Size</h3>
+            <div class="flex max-w-[480px] flex-wrap items-end gap-3 sm:gap-4 px-2 sm:px-4 py-3">
+              <label class="flex flex-col min-w-[120px] sm:min-w-40 flex-1">
+                <p class="text-[#121416] text-sm sm:text-base font-medium leading-normal pb-1 sm:pb-2">Width (px)</p>
+                <input
+                  id="imgWidth"
+                  type="number"
+                  class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#121416] focus:outline-0 focus:ring-0 border border-[#dde1e3] bg-white focus:border-[#a0aec0] h-10 sm:h-14 placeholder:text-[#6a7681] p-2 sm:p-[15px] text-sm sm:text-base font-normal leading-normal"
+                  placeholder="e.g. 600"
+                />
+              </label>
+              <label class="flex flex-col min-w-[120px] sm:min-w-40 flex-1">
+                <p class="text-[#121416] text-sm sm:text-base font-medium leading-normal pb-1 sm:pb-2">Height (px)</p>
+                <input
+                  id="imgHeight"
+                  type="number"
+                  class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#121416] focus:outline-0 focus:ring-0 border border-[#dde1e3] bg-white focus:border-[#a0aec0] h-10 sm:h-14 placeholder:text-[#6a7681] p-2 sm:p-[15px] text-sm sm:text-base font-normal leading-normal"
+                  placeholder="e.g. 600"
+                />
+              </label>
+            </div>
+            
+            <h3 class="text-[#121416] text-md sm:text-lg font-bold leading-tight tracking-[-0.015em] px-2 sm:px-4 pb-2 pt-2 sm:pt-4">Download Format</h3>
+            <div class="flex flex-wrap gap-2 sm:gap-3 p-2 sm:p-4">
+              <label
+                class="text-xs sm:text-sm font-medium leading-normal flex items-center justify-center rounded-xl border border-[#dde1e3] px-3 sm:px-4 h-9 sm:h-11 text-[#121416] has-[:checked]:border-[3px] has-[:checked]:px-2.5 sm:has-[:checked]:px-3.5 has-[:checked]:border-[#82aef5] relative cursor-pointer transition-all"
+              >
+                JPEG
+                <input type="radio" name="downloadFormat" value="image/jpeg" />
+              </label>
+              <label
+                class="text-xs sm:text-sm font-medium leading-normal flex items-center justify-center rounded-xl border border-[#dde1e3] px-3 sm:px-4 h-9 sm:h-11 text-[#121416] has-[:checked]:border-[3px] has-[:checked]:px-2.5 sm:has-[:checked]:px-3.5 has-[:checked]:border-[#82aef5] relative cursor-pointer transition-all"
+              >
+                PNG
+                <input type="radio" name="downloadFormat" value="image/png" checked />
+              </label>
+              <label
+                class="text-xs sm:text-sm font-medium leading-normal flex items-center justify-center rounded-xl border border-[#dde1e3] px-3 sm:px-4 h-9 sm:h-11 text-[#121416] has-[:checked]:border-[3px] has-[:checked]:px-2.5 sm:has-[:checked]:px-3.5 has-[:checked]:border-[#82aef5] relative cursor-pointer transition-all"
+              >
+                WebP
+                <input type="radio" name="downloadFormat" value="image/webp" />
+              </label>
+            </div>
+            
+            <div class="flex px-2 sm:px-4 py-3 mt-auto justify-end"> <!-- Added mt-auto to push to bottom -->
+              <button
+                id="downloadButton"
+                class="flex min-w-[84px] w-full sm:w-auto max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 sm:h-12 px-4 bg-[#0c7ff2] hover:bg-[#0a6fdb] text-white text-sm sm:text-base font-bold leading-normal tracking-[0.015em] transition-colors"
+              >
+                <span class="truncate">Download</span>
+              </button>
+            </div>
+          </div>
         </div>
-
-        <div id="imageCanvasContainer">
-            <canvas id="imageCanvas"></canvas>
-        </div>
-
-        <div class="actions">
-            <button id="applyButton" class="btn-primary">Apply Changes</button>
-            <a id="downloadLink" class="btn-secondary" style="display: none; text-decoration: none;">Download Image</a>
-        </div>
+      </div>
     </div>
-
     <script src="edit.js"></script>
-</body>
+  </body>
 </html>

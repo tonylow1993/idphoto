@@ -1,109 +1,166 @@
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('imageCanvas');
     const ctx = canvas.getContext('2d');
-    const bgColorInput = document.getElementById('bgColor');
     const imgWidthInput = document.getElementById('imgWidth');
     const imgHeightInput = document.getElementById('imgHeight');
-    const applyButton = document.getElementById('applyButton');
-    const downloadLink = document.getElementById('downloadLink');
+    const downloadButton = document.getElementById('downloadButton');
+    const bgColorRadios = document.querySelectorAll('input[name="bgColor"]');
+    const formatRadios = document.querySelectorAll('input[name="downloadFormat"]');
+    const reuploadButton = document.getElementById('reuploadButton');
+
+    const reuploadFileInput = document.createElement('input');
+    reuploadFileInput.type = 'file';
+    reuploadFileInput.accept = 'image/*';
+    reuploadFileInput.style.display = 'none';
+    document.body.appendChild(reuploadFileInput);
 
     let originalImage = null;
-    let maskImage = null;
     let originalImageDataUrl = null;
-    let maskDataUrl = null;
+    let segmentationPolygons = null; // New global variable for polygon data
+
+    // hexToRgb can be removed if not used elsewhere, ctx.fillStyle accepts hex directly.
+    // function hexToRgb(hex) { ... } 
 
     function loadImagesFromStorage() {
         originalImageDataUrl = localStorage.getItem('originalImageUrl');
-        maskDataUrl = localStorage.getItem('maskDataUrl');
+        const segmentationJsonString = localStorage.getItem('segmentationData');
 
-        if (!originalImageDataUrl || !maskDataUrl) {
-            alert('Error: Image data not found. Please upload an image first.');
+        if (!originalImageDataUrl) {
+            alert('Error: Original image data not found. Please upload an image first.');
+            window.location.href = 'index.html';
+            return false;
+        }
+        if (!segmentationJsonString) {
+            alert('Error: Segmentation data not found. Please upload an image again.');
             window.location.href = 'index.html';
             return false;
         }
 
-        let imagesLoaded = 0;
-        const totalImages = 2;
+        try {
+            const parsedData = JSON.parse(segmentationJsonString);
+            // Assuming the structure is {"<REGION_TO_SEGMENTATION>": {"polygons": [[[x,y,x,y,...]],...]}}
+            // The key "<REGION_TO_SEGMENTATION>" might vary or be absent if the JSON directly contains polygons.
+            // For this implementation, we'll look for a "polygons" key at the top level or nested.
+            if (parsedData.polygons) {
+                 segmentationPolygons = parsedData.polygons;
+            } else if (parsedData["<REGION_TO_SEGMENTATION>"]?.polygons) {
+                 segmentationPolygons = parsedData["<REGION_TO_SEGMENTATION>"].polygons;
+            } else {
+                throw new Error("Polygons key not found in segmentation data");
+            }
 
-        function onImageLoad() {
-            imagesLoaded++;
-            if (imagesLoaded === totalImages) {
-                console.log('Original and mask images loaded into Image objects.');
-                // Set initial dimensions in input fields from original image
+            if (!Array.isArray(segmentationPolygons) || segmentationPolygons.length === 0) {
+                console.error('Invalid or empty segmentation polygons:', segmentationPolygons);
+                alert('Error: Invalid or empty segmentation data. Please try again.');
+                // Potentially redirect or offer to re-upload: window.location.href = 'index.html';
+                return false; 
+            }
+            console.log("Segmentation polygons loaded and parsed:", segmentationPolygons);
+        } catch (error) {
+            console.error('Error parsing segmentation data:', error);
+            alert('Error: Could not parse segmentation data. Please try again.');
+            window.location.href = 'index.html';
+            return false;
+        }
+
+        let originalImageLoaded = false;
+
+        function checkLoadCompletion() {
+            if (originalImageLoaded && segmentationPolygons) {
+                console.log('Original image loaded and segmentation data ready.');
                 if (originalImage) {
                     imgWidthInput.value = originalImage.naturalWidth;
                     imgHeightInput.value = originalImage.naturalHeight;
                 }
-                applyUserEdits(); // Perform an initial render
+                redrawCanvas(); // Perform an initial render
             }
         }
 
         originalImage = new Image();
-        originalImage.onload = onImageLoad;
+        originalImage.onload = () => {
+            originalImageLoaded = true;
+            checkLoadCompletion();
+        };
         originalImage.onerror = () => { alert('Error loading original image.'); };
         originalImage.src = originalImageDataUrl;
-
-        maskImage = new Image();
-        maskImage.onload = onImageLoad;
-        maskImage.onerror = () => { alert('Error loading mask image.'); };
-        maskImage.src = maskDataUrl;
         
-        return true;
+        return true; // Indicates that loading process has started
     }
 
-    function applyUserEdits() {
-        if (!originalImage || !maskImage || !originalImage.complete || !maskImage.complete) {
-            console.warn('Images not fully loaded yet. Aborting applyUserEdits.');
+    function getSelectedBgColor() {
+        for (const radio of bgColorRadios) {
+            if (radio.checked) {
+                return radio.value;
+            }
+        }
+        return '#ffffff'; // Default to white if none selected (should not happen with 'checked' attribute)
+    }
+
+    function getSelectedFormat() {
+        for (const radio of formatRadios) {
+            if (radio.checked) {
+                return radio.value;
+            }
+        }
+        return 'image/png'; // Default to PNG
+    }
+
+    function redrawCanvas() {
+        // A. Inputs & Basic Setup
+        if (!originalImage || !originalImage.complete || !segmentationPolygons) {
+            console.warn('Original image or segmentation polygons not ready. Aborting redrawCanvas.');
             return;
         }
 
-        const newBgColor = bgColorInput.value || '#ffffff';
+        const newBgColor = getSelectedBgColor();
         const targetWidth = parseInt(imgWidthInput.value) || originalImage.naturalWidth;
         const targetHeight = parseInt(imgHeightInput.value) || originalImage.naturalHeight;
 
-        // Set canvas dimensions
         canvas.width = targetWidth;
         canvas.height = targetHeight;
 
-        // 1. Fill the entire canvas with the new background color
+        // B. Fill Main Canvas with Background Color
         ctx.fillStyle = newBgColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // 2. Create a temporary canvas for the original image and mask processing
-        const tempCanvas = document.createElement('canvas');
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCanvas.width = originalImage.naturalWidth;
-        tempCanvas.height = originalImage.naturalHeight;
+        // C. Create Polygon Mask Canvas (`polyMaskCanvas`)
+        const polyMaskCanvas = document.createElement('canvas');
+        polyMaskCanvas.width = originalImage.naturalWidth;
+        polyMaskCanvas.height = originalImage.naturalHeight;
+        const polyMaskCtx = polyMaskCanvas.getContext('2d');
+        polyMaskCtx.fillStyle = 'white'; // Color to draw the mask shapes
 
-        // Draw original image onto temp canvas
-        tempCtx.drawImage(originalImage, 0, 0);
-        const originalImgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+        // The segmentationPolygons is expected to be an array of "polyLists".
+        // Each "polyList" is an array of actual polygons.
+        // Each "polygon" is a flat array of coordinates [x1, y1, x2, y2, ...].
+        segmentationPolygons.forEach(polyList => {
+            if (Array.isArray(polyList)) {
+                polyList.forEach(polygon => {
+                    if (Array.isArray(polygon) && polygon.length >= 6) { // Need at least 3 points for a polygon
+                        polyMaskCtx.beginPath();
+                        polyMaskCtx.moveTo(polygon[0], polygon[1]);
+                        for (let j = 2; j < polygon.length; j += 2) {
+                            polyMaskCtx.lineTo(polygon[j], polygon[j + 1]);
+                        }
+                        polyMaskCtx.closePath();
+                        polyMaskCtx.fill();
+                    }
+                });
+            }
+        });
+        
+        // D. Isolate Foreground using Polygon Mask
+        const tempOriginalCanvas = document.createElement('canvas');
+        tempOriginalCanvas.width = originalImage.naturalWidth;
+        tempOriginalCanvas.height = originalImage.naturalHeight;
+        const tempOriginalCtx = tempOriginalCanvas.getContext('2d');
+        
+        tempOriginalCtx.drawImage(originalImage, 0, 0); // Draw original image
+        tempOriginalCtx.globalCompositeOperation = 'destination-in'; // Keep parts of original that overlap with mask
+        tempOriginalCtx.drawImage(polyMaskCanvas, 0, 0); // Apply polygon mask
+        tempOriginalCtx.globalCompositeOperation = 'source-over'; // Reset composite operation
 
-        // Draw mask image onto another temporary canvas to get its pixel data
-        // (ensuring mask is drawn at its natural dimensions to match original)
-        const maskTempCanvas = document.createElement('canvas');
-        const maskTempCtx = maskTempCanvas.getContext('2d');
-        maskTempCanvas.width = maskImage.naturalWidth; // Use naturalWidth of the mask
-        maskTempCanvas.height = maskImage.naturalHeight; // Use naturalHeight of the mask
-        maskTempCtx.drawImage(maskImage, 0, 0, maskImage.naturalWidth, maskImage.naturalHeight);
-        const maskImgData = maskTempCtx.getImageData(0, 0, maskTempCanvas.width, maskTempCanvas.height);
-
-        // 3. Apply the mask to the original image data's alpha channel
-        // Ensure dimensions match for pixel manipulation. If not, this step needs careful scaling.
-        // For simplicity, this assumes the mask's dimensions correspond to the original image's dimensions.
-        // If the mask was generated from the original image, they should.
-        const len = originalImgData.data.length;
-        for (let i = 0; i < len; i += 4) {
-            // Assuming mask is grayscale, use red channel for alpha.
-            // Mask: white (255) = opaque foreground, black (0) = transparent background.
-            const maskValue = maskImgData.data[i]; // Red channel of the mask pixel
-            originalImgData.data[i + 3] = maskValue; // Set alpha channel of original image
-        }
-        tempCtx.putImageData(originalImgData, 0, 0); // Put modified image data back to temp canvas
-
-        // 4. Draw the masked and processed original image onto the main canvas,
-        // scaled to fit targetWidth/targetHeight, maintaining aspect ratio and centered.
-
+        // E. Draw Scaled Foreground to Main Canvas
         const aspect = originalImage.naturalWidth / originalImage.naturalHeight;
         let drawWidth = targetWidth;
         let drawHeight = targetHeight;
@@ -117,28 +174,87 @@ document.addEventListener('DOMContentLoaded', () => {
         const x = (targetWidth - drawWidth) / 2;
         const y = (targetHeight - drawHeight) / 2;
 
-        ctx.drawImage(tempCanvas, x, y, drawWidth, drawHeight);
-
-        // Make download link available
-        const dataUrl = canvas.toDataURL('image/png');
-        downloadLink.href = dataUrl;
-        downloadLink.download = 'edited_photo.png';
-        downloadLink.style.display = 'inline-block';
-        console.log('Edits applied. Canvas updated.');
+        ctx.drawImage(tempOriginalCanvas, x, y, drawWidth, drawHeight);
+        console.log('Canvas redrawn with polygon-based masking.');
     }
 
     // Event Listeners
-    applyButton.addEventListener('click', applyUserEdits);
+    bgColorRadios.forEach(radio => {
+        radio.addEventListener('change', redrawCanvas);
+    });
 
-    // Optional: Apply changes as inputs change (debounced or throttled for performance)
-    // bgColorInput.addEventListener('input', applyUserEdits);
-    // imgWidthInput.addEventListener('change', applyUserEdits); // 'change' fires after losing focus or Enter
-    // imgHeightInput.addEventListener('change', applyUserEdits);
+    imgWidthInput.addEventListener('blur', redrawCanvas);
+    imgHeightInput.addEventListener('blur', redrawCanvas);
 
+    downloadButton.addEventListener('click', () => {
+        // redrawCanvas(); // Optional: ensure canvas is up-to-date, but other events should handle this.
+
+        const selectedMimeType = getSelectedFormat();
+        let fileExtension = '.png';
+        if (selectedMimeType === 'image/jpeg') {
+            fileExtension = '.jpg';
+        } else if (selectedMimeType === 'image/webp') {
+            fileExtension = '.webp';
+        }
+
+        let dataUrl;
+        if (selectedMimeType === 'image/jpeg') {
+            dataUrl = canvas.toDataURL(selectedMimeType, 0.9); // 90% quality for JPEG
+        } else if (selectedMimeType === 'image/webp') {
+            dataUrl = canvas.toDataURL(selectedMimeType, 0.8); // 80% quality for WebP
+        } else { // PNG or any other format
+            dataUrl = canvas.toDataURL(selectedMimeType);
+        }
+        
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = 'edited_photo' + fileExtension;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        console.log('Image download initiated for format:', selectedMimeType);
+    });
 
     // --- Initialization ---
     if (loadImagesFromStorage()) {
-        // Images will be loaded, and applyUserEdits will be called by onImageLoad
+        // Images will be loaded, and redrawCanvas will be called by onImageLoad
         console.log("Image loading initiated...");
     }
+
+    if (reuploadButton) { 
+        reuploadButton.addEventListener('click', () => {
+            reuploadFileInput.click(); 
+        });
+    }
+
+    reuploadFileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const newOriginalImageUrl = e.target.result;
+                
+                localStorage.setItem('originalImageUrl', newOriginalImageUrl);
+                
+                originalImage = new Image(); 
+                originalImage.onload = () => {
+                    console.log('Re-uploaded image loaded successfully.');
+                    if (imgWidthInput && imgHeightInput) {
+                        imgWidthInput.value = originalImage.naturalWidth;
+                        imgHeightInput.value = originalImage.naturalHeight;
+                    }
+                    redrawCanvas(); 
+                };
+                originalImage.onerror = () => {
+                    alert('Error loading re-uploaded image. Please try a different file.');
+                };
+                originalImage.src = newOriginalImageUrl;
+            };
+            reader.onerror = () => {
+                alert('Error reading the re-uploaded file.');
+            };
+            reader.readAsDataURL(file);
+        }
+        reuploadFileInput.value = null; 
+    });
 });
