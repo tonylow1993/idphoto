@@ -46,7 +46,7 @@ function processImage(file) {
         
         const jsonPayload = { "image_base64": base64String };
         
-        const apiKey = "9OMXqnVGAlJAviQdCDAg2kW2sUL1PLeUgbsjoTlUtA3nPXzNEjzoJQQJ99BEAAAAAAAAAAAAINFRAZML4GHW"; 
+        const apiKey = "APbPEaSgK7s7J3Dt09bkJ3LYWcqNVgH00MPTMz4D30fheHc5zoszJQQJ99BEAAAAAAAAAAAAINFRAZML44EQ"; 
         const apiUrl = "https://apimjpeast.azure-api.net/score";
         
         const requestHeaders = new Headers();
