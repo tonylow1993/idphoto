@@ -29,61 +29,62 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 function processImage(file) {
-    const reader = new FileReader(); // For Data URL (originalImageUrl)
+    const reader = new FileReader(); 
 
-    reader.onload = (loadEvent) => { // Renamed 'e' to 'loadEvent' for clarity
-        const originalImageUrl = loadEvent.target.result;
+    reader.onload = async (loadEvent) => { 
+        const originalImageUrl = loadEvent.target.result; // This is the Data URL
         localStorage.setItem('originalImageUrl', originalImageUrl);
-        console.log('Original image loaded for preview:', originalImageUrl.substring(0, 50) + '...');
+        console.log('Original image loaded for preview and local storage:', originalImageUrl.substring(0, 50) + '...');
 
-        // Now read the file again as ArrayBuffer for the API call
-        const arrayBufferReader = new FileReader();
-        arrayBufferReader.onload = async (eventAB) => {
-            const imageBinaryData = eventAB.target.result; // This is an ArrayBuffer
-            const apiKey = "9OMXqnVGAlJAviQdCDAg2kW2sUL1PLeUgbsjoTlUtA3nPXzNEjzoJQQJ99BEAAAAAAAAAAAAINFRAZML4GHW"; 
-            const apiUrl = "https://jp-ml-vlulx.japaneast.inference.ml.azure.com/score";
-            
-            const requestHeaders = new Headers();
-            requestHeaders.append("Content-Type", file.type); 
-            requestHeaders.append("Authorization", "Bearer " + apiKey);
-            requestHeaders.append("azureml-model-deployment", "florence-2-large-1");
+        const parts = originalImageUrl.split(',');
+        if (parts.length < 2 || !parts[1]) {
+            alert('Error processing image data for Base64 encoding.');
+            console.error('Could not extract Base64 string from Data URL:', originalImageUrl.substring(0,100));
+            return; 
+        }
+        const base64String = parts[1];
+        
+        const jsonPayload = { "image_base64": base64String };
+        
+        const apiKey = "9OMXqnVGAlJAviQdCDAg2kW2sUL1PLeUgbsjoTlUtA3nPXzNEjzoJQQJ99BEAAAAAAAAAAAAINFRAZML4GHW"; 
+        const apiUrl = "https://apimjpeast.azure-api.net/score";
+        
+        const requestHeaders = new Headers();
+        requestHeaders.append("Content-Type", "application/json"); 
+        requestHeaders.append("Authorization", "Bearer " + apiKey);
+        requestHeaders.append("azureml-model-deployment", "florence-2-large-1");
 
-            console.log("Attempting API call to:", apiUrl);
-            console.log("With Content-Type:", file.type);
+        console.log("Attempting API call to:", apiUrl);
+        console.log("With Content-Type: application/json");
+        // Optional: console.log("Payload being sent:", JSON.stringify(jsonPayload).substring(0,100) + "...");
 
-            try {
-                const response = await fetch(apiUrl, {
-                    method: "POST",
-                    body: imageBinaryData,
-                    headers: requestHeaders
-                });
+        try {
+            const response = await fetch(apiUrl, {
+                method: "POST",
+                body: JSON.stringify(jsonPayload), 
+                headers: requestHeaders
+            });
 
-                if (response.ok) {
-                    const jsonResponse = await response.json();
-                    console.log("API Response OK. JSON:", jsonResponse);
-                    localStorage.setItem('segmentationData', JSON.stringify(jsonResponse));
-                    window.location.href = 'edit.html';
-                } else {
-                    console.error("API Request Failed with status:", response.status, response.statusText);
-                    const responseBodyText = await response.text();
-                    console.error("Error response headers:", ...response.headers);
-                    console.error("Error response body:", responseBodyText);
-                    alert(`Error segmenting image. Status: ${response.status} ${response.statusText}. Check console for details.`);
-                }
-            } catch (error) {
-                console.error("Error during API call:", error);
-                alert("Error making request to segmentation service. Check console for details.");
+            if (response.ok) {
+                const jsonResponse = await response.json();
+                console.log("API Response OK. JSON:", jsonResponse);
+                localStorage.setItem('segmentationData', JSON.stringify(jsonResponse));
+                window.location.href = 'edit.html';
+            } else {
+                console.error("API Request Failed with status:", response.status, response.statusText);
+                const responseBodyText = await response.text();
+                console.error("Error response headers:", ...response.headers);
+                console.error("Error response body:", responseBodyText);
+                alert(`Error segmenting image. Status: ${response.status} ${response.statusText}. Check console for details.`);
             }
-        };
-        arrayBufferReader.onerror = () => {
-            console.error('Error reading file as ArrayBuffer.');
-            alert('Error reading file for API upload.');
-        };
-        arrayBufferReader.readAsArrayBuffer(file);
+        } catch (error) {
+            console.error("Error during API call:", error);
+            alert("Error making request to segmentation service. Check console for details.");
+        }
     };
     reader.onerror = () => {
         console.error('Error reading file as DataURL.');
-        alert('Error reading file for preview.');
+        alert('Error reading file.'); // Simplified alert
     };
     reader.readAsDataURL(file);
 }
