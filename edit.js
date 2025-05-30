@@ -37,13 +37,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const parsedData = JSON.parse(segmentationJsonString);
+            const parsedResponse = JSON.parse(segmentationJsonString);
+            const parsedData = JSON.parse(parsedResponse[0])
             // Assuming the structure is {"<REGION_TO_SEGMENTATION>": {"polygons": [[[x,y,x,y,...]],...]}}
             // The key "<REGION_TO_SEGMENTATION>" might vary or be absent if the JSON directly contains polygons.
             // For this implementation, we'll look for a "polygons" key at the top level or nested.
-            if (parsedData.polygons) {
-                 segmentationPolygons = parsedData.polygons;
-            } else if (parsedData["<REGION_TO_SEGMENTATION>"]?.polygons) {
+            if (parsedData["<REGION_TO_SEGMENTATION>"]?.polygons) {
                  segmentationPolygons = parsedData["<REGION_TO_SEGMENTATION>"].polygons;
             } else {
                 throw new Error("Polygons key not found in segmentation data");
