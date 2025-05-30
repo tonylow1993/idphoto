@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const loadingBar = document.getElementById('loading-bar'); // Get reference to loading bar
+
   const buttons = document.querySelectorAll('button');
   let uploadButton = null;
   buttons.forEach(button => {
@@ -29,22 +31,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 function processImage(file) {
-    const reader = new FileReader(); 
+    const reader = new FileReader();
 
-    reader.onload = async (loadEvent) => { 
-        const originalImageUrl = loadEvent.target.result; // This is the Data URL
-        localStorage.setItem('originalImageUrl', originalImageUrl);
-        console.log('Original image loaded for preview and local storage:', originalImageUrl.substring(0, 50) + '...');
+    reader.onload = async (loadEvent) => {
+      // Show loading bar
+      if (loadingBar) {
+        loadingBar.style.display = 'block';
+      }
 
-        const parts = originalImageUrl.split(',');
-        if (parts.length < 2 || !parts[1]) {
-            alert('Error processing image data for Base64 encoding.');
-            console.error('Could not extract Base64 string from Data URL:', originalImageUrl.substring(0,100));
-            return; 
+      const originalImageUrl = loadEvent.target.result;
+      localStorage.setItem('originalImageUrl', originalImageUrl);
+      console.log('Original image loaded for preview and local storage:', originalImageUrl.substring(0, 50) + '...');
+
+      const parts = originalImageUrl.split(',');
+      if (parts.length < 2 || !parts[1]) {
+        alert('Error processing image data for Base64 encoding.');
+        console.error('Could not extract Base64 string from Data URL:', originalImageUrl.substring(0,100));
+        // Hide loading bar on error
+        if (loadingBar) {
+          loadingBar.style.display = 'none';
         }
-        const base64String = parts[1];
-        
-        const jsonPayload = { "image_base64": base64String };
+        return;
+      }
+      const base64String = parts[1];
+
+      const jsonPayload = { "image_base64": base64String };
         
         const apiKey = "2FB45Yc1Dpu3N0MI1Un21lx3vMqiTaiTyAJzY21RjChM3OdV9d8MJQQJ99BEAAAAAAAAAAAAINFRAZML4eUq"; 
         const apiUrl = "https://apimjpeast.azure-api.net/score";
@@ -71,21 +82,37 @@ function processImage(file) {
                 console.log("API Response OK. JSON:", jsonResponse);
                 localStorage.setItem('segmentationData', JSON.stringify(jsonResponse));
                 window.location.href = 'edit.html';
+                // Hide loading bar on success (though redirect might make this brief)
+                if (loadingBar) {
+                  loadingBar.style.display = 'none';
+                }
             } else {
                 console.error("API Request Failed with status:", response.status, response.statusText);
                 const responseBodyText = await response.text();
                 console.error("Error response headers:", ...response.headers);
                 console.error("Error response body:", responseBodyText);
                 alert(`Error segmenting image. Status: ${response.status} ${response.statusText}. Check console for details.`);
+                // Hide loading bar on API error
+                if (loadingBar) {
+                  loadingBar.style.display = 'none';
+                }
             }
         } catch (error) {
             console.error("Error during API call:", error);
             alert("Error making request to segmentation service. Check console for details.");
+            // Hide loading bar on fetch error
+            if (loadingBar) {
+              loadingBar.style.display = 'none';
+            }
         }
     };
     reader.onerror = () => {
         console.error('Error reading file as DataURL.');
-        alert('Error reading file.'); // Simplified alert
+        alert('Error reading file.');
+        // Hide loading bar on reader error
+        if (loadingBar) {
+          loadingBar.style.display = 'none';
+        }
     };
     reader.readAsDataURL(file);
 }
