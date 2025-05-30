@@ -46,13 +46,14 @@ function processImage(file) {
         
         const jsonPayload = { "image_base64": base64String };
         
-        const apiKey = "APbPEaSgK7s7J3Dt09bkJ3LYWcqNVgH00MPTMz4D30fheHc5zoszJQQJ99BEAAAAAAAAAAAAINFRAZML44EQ"; 
+        const apiKey = "2FB45Yc1Dpu3N0MI1Un21lx3vMqiTaiTyAJzY21RjChM3OdV9d8MJQQJ99BEAAAAAAAAAAAAINFRAZML4eUq"; 
         const apiUrl = "https://apimjpeast.azure-api.net/score";
         
         const requestHeaders = new Headers();
         requestHeaders.append("Content-Type", "application/json"); 
         requestHeaders.append("Authorization", "Bearer " + apiKey);
-        requestHeaders.append("azureml-model-deployment", "florence-2-large-1");
+        requestHeaders.append("azureml-model-deployment", "florence-2-base-ft-1");
+        requestHeaders.append("Ocp-Apim-Subscription-Key", "618df31151db414e9b5aa1c1a4651d29");
 
         console.log("Attempting API call to:", apiUrl);
         console.log("With Content-Type: application/json");
