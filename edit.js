@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let originalImage = null;
     let originalImageDataUrl = null;
     let segmentationPolygons = null; // New global variable for polygon data
+    let segmentationLabels = null; // New global variable for segmentation labels
 
     // hexToRgb can be removed if not used elsewhere, ctx.fillStyle accepts hex directly.
     // function hexToRgb(hex) { ... } 
@@ -38,15 +39,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const parsedData = JSON.parse(segmentationJsonString);
-            // Assuming the structure is {"<REGION_TO_SEGMENTATION>": {"polygons": [[[x,y,x,y,...]],...]}}
-            // The key "<REGION_TO_SEGMENTATION>" might vary or be absent if the JSON directly contains polygons.
-            // For this implementation, we'll look for a "polygons" key at the top level or nested.
-            if (parsedData.polygons) {
-                 segmentationPolygons = parsedData.polygons;
-            } else if (parsedData["<REGION_TO_SEGMENTATION>"]?.polygons) {
-                 segmentationPolygons = parsedData["<REGION_TO_SEGMENTATION>"].polygons;
-            } else {
-                throw new Error("Polygons key not found in segmentation data");
+            const regionKeys = Object.keys(parsedData);
+
+            if (regionKeys.length > 1) {
+                throw new Error("Multiple objects detected in segmentation data. Only one object is allowed.");
+            } else if (regionKeys.length === 1) {
+                const regionKey = regionKeys[0];
+                if (parsedData[regionKey] && typeof parsedData[regionKey] === 'object' && 'polygons' in parsedData[regionKey] && 'labels' in parsedData[regionKey]) {
+                    segmentationPolygons = parsedData[regionKey].polygons;
+                    segmentationLabels = parsedData[regionKey].labels;
+                    console.log("New format segmentation data loaded. Labels:", segmentationLabels);
+                } else {
+                    // This case could happen if the single key doesn't conform to the expected structure.
+                    // Fall through to check for old format or throw unrecognized structure error.
+                    if (parsedData.polygons) { // Check for old format as a fallback
+                        segmentationPolygons = parsedData.polygons;
+                        segmentationLabels = null; 
+                        console.log("Old format segmentation data loaded (direct polygons key) after single key did not match new structure.");
+                    } else {
+                        throw new Error("Data structure with single key is unrecognized or missing 'polygons'/'labels'.");
+                    }
+                }
+            } else if (parsedData.polygons) { // regionKeys.length === 0
+                // Old format: {"polygons": [...]}
+                segmentationPolygons = parsedData.polygons;
+                segmentationLabels = null; // Ensure labels are null for old format
+                console.log("Old format segmentation data loaded (direct polygons key).");
+            } else { // regionKeys.length === 0 and no parsedData.polygons
+                // Unknown format or error
+                throw new Error("Polygons key not found or data structure is unrecognized.");
             }
 
             if (!Array.isArray(segmentationPolygons) || segmentationPolygons.length === 0) {
@@ -58,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("Segmentation polygons loaded and parsed:", segmentationPolygons);
         } catch (error) {
             console.error('Error parsing segmentation data:', error);
-            alert('Error: Could not parse segmentation data. Please try again.');
+            alert('Error: Could not parse segmentation data. ' + error.message + ' Please try again.');
             window.location.href = 'index.html';
             return false;
         }
