@@ -1,7 +1,7 @@
 // script.js
 
 // Add this import at the top of the file
-import removeBackground from '/libs/@imgly/background-removal/index.mjs';
+import { removeBackground } from '/libs/@imgly/background-removal/index.mjs';
 
 document.addEventListener('DOMContentLoaded', () => {
   const buttons = document.querySelectorAll('button');
