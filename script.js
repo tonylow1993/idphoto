@@ -1,7 +1,7 @@
 // script.js
 
 // Add this import at the top of the file
-import removeBackground from './node_modules/@imgly/background-removal/dist/browser.js';
+import removeBackground from '/libs/@imgly/background-removal/index.mjs';
 
 document.addEventListener('DOMContentLoaded', () => {
   const buttons = document.querySelectorAll('button');
@@ -48,9 +48,7 @@ async function processImage(file) { // Changed to take file object
             // If this causes issues, we can try with the 'file' object directly if the library supports it,
             // or convert the Data URL to a Blob first.
             const blob = await removeBackground(originalImageUrl, {
-                // Optional: Configure publicPath if models are not found automatically from CDN
-                // publicPath: 'https://unpkg.com/@imgly/background-removal@5.0.1/dist/assets/'
-                // Adding logging for debugging potential model loading issues
+                publicPath: '/libs/@imgly/background-removal/', // Serve assets from the same path
                 debug: true,
                 progress: (key, current, total) => {
                     console.log(`Downloading ${key}: ${current} of ${total}`);

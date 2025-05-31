@@ -6,6 +6,8 @@ const port = 3000;
 // Serve static files from the current directory
 app.use(express.static(__dirname));
 
+app.use('/libs/@imgly/background-removal', express.static(path.join(__dirname, 'node_modules/@imgly/background-removal/dist')));
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
