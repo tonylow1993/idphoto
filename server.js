@@ -7,6 +7,7 @@ const port = 3000;
 app.use(express.static(__dirname));
 
 app.use('/libs/@imgly/background-removal', express.static(path.join(__dirname, 'node_modules/@imgly/background-removal/'))); // Serve entire package
+app.use('/libs/onnxruntime-web', express.static(path.join(__dirname, 'node_modules/onnxruntime-web/dist'))); // Serve ONNX runtime assets
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
