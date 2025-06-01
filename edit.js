@@ -1,4 +1,40 @@
 // edit.js
+
+const DB_NAME = "ImageEditorDB";
+const STORE_NAME = "processedImages";
+const DB_VERSION = 1;
+
+function openImageDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+    request.onsuccess = (event) => { resolve(event.target.result); };
+    request.onerror = (event) => {
+      console.error("IndexedDB error:", event.target.error);
+      reject("Error opening IndexedDB: " + event.target.error);
+    };
+  });
+}
+
+function getImageFromDB(db, key) {
+  return new Promise((resolve, reject) => {
+    if (!db) { reject("DB not initialized"); return; }
+    const transaction = db.transaction([STORE_NAME], "readonly");
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.get(key);
+    request.onsuccess = (event) => { resolve(event.target.result); };
+    request.onerror = (event) => {
+      console.error("Error getting image from IndexedDB:", event.target.error);
+      reject("Error getting image: " + event.target.error);
+    };
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('imageCanvas');
     const ctx = canvas.getContext('2d');
@@ -18,26 +54,22 @@ document.addEventListener('DOMContentLoaded', () => {
     let originalImage = null; // Will still be used for dimensions and re-upload reference
     let originalImageDataUrl = null;
     let foregroundImage = null; // New: To store the image with background removed
-    let foregroundImageDataUrl = null;
+    let foregroundImageDataUrl = null; // This variable will no longer be used for foreground image.
 
     function loadImagesFromStorage() {
         originalImageDataUrl = localStorage.getItem('originalImageUrl');
-        foregroundImageDataUrl = localStorage.getItem('foregroundImageUrl'); // New
+        // foregroundImageDataUrl = localStorage.getItem('foregroundImageUrl'); // REMOVED
 
         if (!originalImageDataUrl) {
             alert('Error: Original image data not found. Please upload an image first.');
             window.location.href = 'index.html';
-            return false;
+            return false; // Exit early if original image is missing
         }
-        if (!foregroundImageDataUrl) { // Check for the new foreground image
-            alert('Error: Foreground image data not found. Please try processing the image again.');
-            // Potentially direct to index.html if critical, or allow re-upload to re-process
-            window.location.href = 'index.html';
-            return false;
-        }
+        // REMOVED: Check for foregroundImageDataUrl from localStorage
+        // if (!foregroundImageDataUrl) { ... }
 
         let originalImageLoaded = false;
-        let foregroundImageLoaded = false;
+        let foregroundImageLoaded = false; // Keep this flag
 
         function checkLoadCompletion() {
             if (originalImageLoaded && foregroundImageLoaded) {
@@ -46,26 +78,58 @@ document.addEventListener('DOMContentLoaded', () => {
                     imgWidthInput.value = originalImage.naturalWidth;
                     imgHeightInput.value = originalImage.naturalHeight;
                 }
+                // Ensure foregroundImage has dimensions before redraw, if possible
+                if (foregroundImage && foregroundImage.naturalWidth > 0 && !imgWidthInput.value) {
+                     imgWidthInput.value = foregroundImage.naturalWidth;
+                     imgHeightInput.value = foregroundImage.naturalHeight;
+                }
                 redrawCanvas();
             }
         }
 
+        // Load original image (still from localStorage Data URL)
         originalImage = new Image();
         originalImage.onload = () => {
             originalImageLoaded = true;
             checkLoadCompletion();
         };
-        originalImage.onerror = () => { alert('Error loading original image.'); };
+        originalImage.onerror = () => {
+            alert('Error loading original image. Please try re-uploading.');
+            window.location.href = 'index.html'; // Critical error
+        };
         originalImage.src = originalImageDataUrl;
 
-        foregroundImage = new Image(); // New: Load the foreground image
-        foregroundImage.onload = () => {
-            foregroundImageLoaded = true;
-            checkLoadCompletion();
-        };
-        foregroundImage.onerror = () => { alert('Error loading foreground image.'); };
-        foregroundImage.src = foregroundImageDataUrl;
+        // Load foreground image from IndexedDB
+        openImageDB().then(db => {
+          return getImageFromDB(db, "foregroundImage");
+        }).then(foregroundBlob => {
+          if (foregroundBlob) {
+            console.log("Foreground image blob retrieved from IndexedDB.");
+            foregroundImage = new Image(); // Initialize the global foregroundImage
+            foregroundImage.onload = () => {
+              foregroundImageLoaded = true;
+              checkLoadCompletion();
+              // URL.revokeObjectURL(foregroundImage.src); // Clean up object URL after image is loaded by canvas
+              // Actually, canvas will use it, so revoke later or manage carefully.
+              // For now, let's not revoke here to ensure canvas has access.
+            };
+            foregroundImage.onerror = () => {
+                alert("Error loading foreground image from Blob. Please try re-processing.");
+                window.location.href = 'index.html'; // Critical error
+            };
+            foregroundImage.src = URL.createObjectURL(foregroundBlob);
+          } else {
+            alert("Error: Foreground image data not found in DB. Please process image again.");
+            window.location.href = 'index.html';
+          }
+        }).catch(error => {
+          console.error("Error loading foreground image from IndexedDB:", error);
+          alert("Error loading foreground image from DB. Please try again.");
+          window.location.href = 'index.html';
+        });
         
+        // The function will return true if original image loading has started.
+        // The actual success of loading both images is handled asynchronously by checkLoadCompletion.
         return true;
     }
 
@@ -189,4 +253,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // reuploadFileInput.addEventListener('change', (event) => { ... });
     // The old logic for re-uploading directly on edit.html is no longer valid
     // as background removal (the new @imgly/background-removal) is in script.js (on index.html)
+
+  window.addEventListener("beforeunload", () => {
+    if (foregroundImage && foregroundImage.src && foregroundImage.src.startsWith("blob:")) {
+      console.log("Revoking Object URL:", foregroundImage.src);
+      URL.revokeObjectURL(foregroundImage.src);
+    }
+  });
 });
