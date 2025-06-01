@@ -48,7 +48,7 @@ async function processImage(file) { // Changed to take file object
             // If this causes issues, we can try with the 'file' object directly if the library supports it,
             // or convert the Data URL to a Blob first.
             const blob = await removeBackground(originalImageUrl, {
-                publicPath: '/libs/@imgly/background-removal/', // Serve assets from the same path
+                publicPath: `${window.location.origin}/libs/@imgly/background-removal/`, // Serve assets from the same path
                 debug: true,
                 progress: (key, current, total) => {
                     console.log(`Downloading ${key}: ${current} of ${total}`);
