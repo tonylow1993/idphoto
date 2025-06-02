@@ -83,6 +83,15 @@
             <div class="flex flex-wrap justify-between items-center gap-3 p-2 sm:p-4 border-b border-gray-200 mb-4">
                 <p class="text-[#121416] tracking-light text-2xl sm:text-3xl font-bold leading-tight">Edit Your Photo</p>
             </div>
+
+            <div id="edit-loading-indicator" style="display: none; margin-top: 20px; margin-bottom:20px; text-align: center;">
+              <p id="edit-loading-text" style="margin-bottom: 8px; font-size: 1em; color: #333;">Processing...</p>
+              <div id="edit-loading-bar-container" style="width: 90%; max-width: 500px; background-color: #f0f0f0; border: 1px solid #ccc; border-radius: 6px; margin: auto; padding: 2px;">
+                <div id="edit-loading-bar-progress" style="width: 0%; height: 24px; background-color: #0c7ff2; border-radius: 4px; text-align: center; color: white; line-height: 24px; font-weight: bold; transition: width 0.2s ease-in-out;">
+                  0%
+                </div>
+              </div>
+            </div>
             
             <div class="flex w-full h-[300px] sm:h-[400px] md:h-[450px] bg-transparent @container rounded-xl mb-4 sm:mb-6 justify-center items-center">
               <div id="imageCanvasContainer" class="rounded-lg" style="width:100%; height:100%; max-width:100%; max-height:100%;">
@@ -164,6 +173,15 @@
                   placeholder="e.g. 600"
                 />
               </label>
+            </div>
+
+            <div class="flex px-2 sm:px-4 py-3 my-4 justify-center"> <!-- Added my-4 for margin -->
+              <button
+                id="generateButton"
+                class="flex min-w-[84px] w-full sm:w-auto max-w-[320px] sm:max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 sm:h-12 px-4 bg-[#0c7ff2] hover:bg-[#0a6fdb] text-white text-sm sm:text-base font-bold leading-normal tracking-[0.015em] transition-colors"
+              >
+                <span class="truncate">Generate</span>
+              </button>
             </div>
             
             <h3 class="text-[#121416] text-md sm:text-lg font-bold leading-tight tracking-[-0.015em] px-2 sm:px-4 pb-2 pt-2 sm:pt-4">Download Format</h3>
