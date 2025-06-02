@@ -12,12 +12,15 @@
     <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
 
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <style>
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+
+    <script type="importmap">
+    {
+      "imports": {
+        "onnxruntime-web": "/libs/onnxruntime-web/ort.min.mjs",
+        "@imgly/background-removal": "/libs/@imgly/background-removal/dist/index.mjs"
       }
-    </style>
+    }
+    </script>
   </head>
   <body>
     <div class="relative flex size-full min-h-screen flex-col bg-white group/design-root overflow-x-hidden" style='font-family: Inter, "Noto Sans", sans-serif;'>
@@ -83,6 +86,14 @@
                 </div>
               </div>
             </div>
+            <div id="loading-indicator" style="display: none; margin-top: 20px; margin-bottom:20px; text-align: center;">
+  <p id="loading-text" style="margin-bottom: 8px; font-size: 1em; color: #333;">Processing...</p>
+  <div id="loading-bar-container" style="width: 90%; max-width: 500px; background-color: #f0f0f0; border: 1px solid #ccc; border-radius: 6px; margin: auto; padding: 2px;">
+    <div id="loading-bar-progress" style="width: 0%; height: 24px; background-color: #0c7ff2; border-radius: 4px; text-align: center; color: white; line-height: 24px; font-weight: bold; transition: width 0.2s ease-in-out;">
+      0%
+    </div>
+  </div>
+</div>
             <h2 class="text-[#111418] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">How It Works</h2>
             <div class="grid grid-cols-[40px_1fr] gap-x-2 px-4">
               <div class="flex flex-col items-center gap-1 pt-3">
@@ -349,6 +360,6 @@
         </footer>
       </div>
     </div>
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
   </body>
 </html>

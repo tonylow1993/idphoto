@@ -1,3 +1,40 @@
+// edit.js
+
+const DB_NAME = "ImageEditorDB";
+const STORE_NAME = "processedImages";
+const DB_VERSION = 1;
+
+function openImageDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+    request.onsuccess = (event) => { resolve(event.target.result); };
+    request.onerror = (event) => {
+      console.error("IndexedDB error:", event.target.error);
+      reject("Error opening IndexedDB: " + event.target.error);
+    };
+  });
+}
+
+function getImageFromDB(db, key) {
+  return new Promise((resolve, reject) => {
+    if (!db) { reject("DB not initialized"); return; }
+    const transaction = db.transaction([STORE_NAME], "readonly");
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.get(key);
+    request.onsuccess = (event) => { resolve(event.target.result); };
+    request.onerror = (event) => {
+      console.error("Error getting image from IndexedDB:", event.target.error);
+      reject("Error getting image: " + event.target.error);
+    };
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('imageCanvas');
     const ctx = canvas.getContext('2d');
@@ -14,76 +51,86 @@ document.addEventListener('DOMContentLoaded', () => {
     reuploadFileInput.style.display = 'none';
     document.body.appendChild(reuploadFileInput);
 
-    let originalImage = null;
+    let originalImage = null; // Will still be used for dimensions and re-upload reference
     let originalImageDataUrl = null;
-    let segmentationPolygons = null; // New global variable for polygon data
-
-    // hexToRgb can be removed if not used elsewhere, ctx.fillStyle accepts hex directly.
-    // function hexToRgb(hex) { ... } 
+    let foregroundImage = null; // New: To store the image with background removed
+    let foregroundImageDataUrl = null; // This variable will no longer be used for foreground image.
 
     function loadImagesFromStorage() {
         originalImageDataUrl = localStorage.getItem('originalImageUrl');
-        const segmentationJsonString = localStorage.getItem('segmentationData');
+        // foregroundImageDataUrl = localStorage.getItem('foregroundImageUrl'); // REMOVED
 
         if (!originalImageDataUrl) {
             alert('Error: Original image data not found. Please upload an image first.');
             window.location.href = 'index.html';
-            return false;
+            return false; // Exit early if original image is missing
         }
-        if (!segmentationJsonString) {
-            alert('Error: Segmentation data not found. Please upload an image again.');
-            window.location.href = 'index.html';
-            return false;
-        }
-
-        try {
-            const parsedResponse = JSON.parse(segmentationJsonString);
-            const parsedData = JSON.parse(parsedResponse[0])
-            // Assuming the structure is {"<REGION_TO_SEGMENTATION>": {"polygons": [[[x,y,x,y,...]],...]}}
-            // The key "<REGION_TO_SEGMENTATION>" might vary or be absent if the JSON directly contains polygons.
-            // For this implementation, we'll look for a "polygons" key at the top level or nested.
-            if (parsedData["<REGION_TO_SEGMENTATION>"]?.polygons) {
-                 segmentationPolygons = parsedData["<REGION_TO_SEGMENTATION>"].polygons;
-            } else {
-                throw new Error("Polygons key not found in segmentation data");
-            }
-
-            if (!Array.isArray(segmentationPolygons) || segmentationPolygons.length === 0) {
-                console.error('Invalid or empty segmentation polygons:', segmentationPolygons);
-                alert('Error: Invalid or empty segmentation data. Please try again.');
-                // Potentially redirect or offer to re-upload: window.location.href = 'index.html';
-                return false; 
-            }
-            console.log("Segmentation polygons loaded and parsed:", segmentationPolygons);
-        } catch (error) {
-            console.error('Error parsing segmentation data:', error);
-            alert('Error: Could not parse segmentation data. Please try again.');
-            window.location.href = 'index.html';
-            return false;
-        }
+        // REMOVED: Check for foregroundImageDataUrl from localStorage
+        // if (!foregroundImageDataUrl) { ... }
 
         let originalImageLoaded = false;
+        let foregroundImageLoaded = false; // Keep this flag
 
         function checkLoadCompletion() {
-            if (originalImageLoaded && segmentationPolygons) {
-                console.log('Original image loaded and segmentation data ready.');
-                if (originalImage) {
+            if (originalImageLoaded && foregroundImageLoaded) {
+                console.log('Original and foreground images loaded.');
+                if (originalImage) { // Keep using originalImage for initial dimensions
                     imgWidthInput.value = originalImage.naturalWidth;
                     imgHeightInput.value = originalImage.naturalHeight;
                 }
-                redrawCanvas(); // Perform an initial render
+                // Ensure foregroundImage has dimensions before redraw, if possible
+                if (foregroundImage && foregroundImage.naturalWidth > 0 && !imgWidthInput.value) {
+                     imgWidthInput.value = foregroundImage.naturalWidth;
+                     imgHeightInput.value = foregroundImage.naturalHeight;
+                }
+                redrawCanvas();
             }
         }
 
+        // Load original image (still from localStorage Data URL)
         originalImage = new Image();
         originalImage.onload = () => {
             originalImageLoaded = true;
             checkLoadCompletion();
         };
-        originalImage.onerror = () => { alert('Error loading original image.'); };
+        originalImage.onerror = () => {
+            alert('Error loading original image. Please try re-uploading.');
+            window.location.href = 'index.html'; // Critical error
+        };
         originalImage.src = originalImageDataUrl;
+
+        // Load foreground image from IndexedDB
+        openImageDB().then(db => {
+          return getImageFromDB(db, "foregroundImage");
+        }).then(foregroundBlob => {
+          if (foregroundBlob) {
+            console.log("Foreground image blob retrieved from IndexedDB.");
+            foregroundImage = new Image(); // Initialize the global foregroundImage
+            foregroundImage.onload = () => {
+              foregroundImageLoaded = true;
+              checkLoadCompletion();
+              // URL.revokeObjectURL(foregroundImage.src); // Clean up object URL after image is loaded by canvas
+              // Actually, canvas will use it, so revoke later or manage carefully.
+              // For now, let's not revoke here to ensure canvas has access.
+            };
+            foregroundImage.onerror = () => {
+                alert("Error loading foreground image from Blob. Please try re-processing.");
+                window.location.href = 'index.html'; // Critical error
+            };
+            foregroundImage.src = URL.createObjectURL(foregroundBlob);
+          } else {
+            alert("Error: Foreground image data not found in DB. Please process image again.");
+            window.location.href = 'index.html';
+          }
+        }).catch(error => {
+          console.error("Error loading foreground image from IndexedDB:", error);
+          alert("Error loading foreground image from DB. Please try again.");
+          window.location.href = 'index.html';
+        });
         
-        return true; // Indicates that loading process has started
+        // The function will return true if original image loading has started.
+        // The actual success of loading both images is handled asynchronously by checkLoadCompletion.
+        return true;
     }
 
     function getSelectedBgColor() {
@@ -92,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return radio.value;
             }
         }
-        return '#ffffff'; // Default to white if none selected (should not happen with 'checked' attribute)
+        return '#ffffff';
     }
 
     function getSelectedFormat() {
@@ -101,83 +148,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 return radio.value;
             }
         }
-        return 'image/png'; // Default to PNG
+        return 'image/png';
     }
 
     function redrawCanvas() {
-        // A. Inputs & Basic Setup
-        if (!originalImage || !originalImage.complete || !segmentationPolygons) {
-            console.warn('Original image or segmentation polygons not ready. Aborting redrawCanvas.');
+        if (!originalImage || !originalImage.complete || !foregroundImage || !foregroundImage.complete) {
+            console.warn('Original or foreground image not ready. Aborting redrawCanvas.');
             return;
         }
 
         const newBgColor = getSelectedBgColor();
-        const targetWidth = parseInt(imgWidthInput.value) || originalImage.naturalWidth;
-        const targetHeight = parseInt(imgHeightInput.value) || originalImage.naturalHeight;
+        const targetWidth = parseInt(imgWidthInput.value) || foregroundImage.naturalWidth; // Use foreground for default size
+        const targetHeight = parseInt(imgHeightInput.value) || foregroundImage.naturalHeight; // Use foreground for default size
 
         canvas.width = targetWidth;
         canvas.height = targetHeight;
 
-        // B. Fill Main Canvas with Background Color
+        // 1. Fill Main Canvas with Background Color
         ctx.fillStyle = newBgColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // C. Create Polygon Mask Canvas (`polyMaskCanvas`)
-        const polyMaskCanvas = document.createElement('canvas');
-        polyMaskCanvas.width = originalImage.naturalWidth;
-        polyMaskCanvas.height = originalImage.naturalHeight;
-        const polyMaskCtx = polyMaskCanvas.getContext('2d');
-        polyMaskCtx.fillStyle = 'white'; // Color to draw the mask shapes
-
-        // The segmentationPolygons is expected to be an array of "polyLists".
-        // Each "polyList" is an array of actual polygons.
-        // Each "polygon" is a flat array of coordinates [x1, y1, x2, y2, ...].
-        segmentationPolygons.forEach(polyList => {
-            if (Array.isArray(polyList)) {
-                polyList.forEach(polygon => {
-                    if (Array.isArray(polygon) && polygon.length >= 6) { // Need at least 3 points for a polygon
-                        polyMaskCtx.beginPath();
-                        polyMaskCtx.moveTo(polygon[0], polygon[1]);
-                        for (let j = 2; j < polygon.length; j += 2) {
-                            polyMaskCtx.lineTo(polygon[j], polygon[j + 1]);
-                        }
-                        polyMaskCtx.closePath();
-                        polyMaskCtx.fill();
-                    }
-                });
-            }
-        });
-        
-        // D. Isolate Foreground using Polygon Mask
-        const tempOriginalCanvas = document.createElement('canvas');
-        tempOriginalCanvas.width = originalImage.naturalWidth;
-        tempOriginalCanvas.height = originalImage.naturalHeight;
-        const tempOriginalCtx = tempOriginalCanvas.getContext('2d');
-        
-        tempOriginalCtx.drawImage(originalImage, 0, 0); // Draw original image
-        tempOriginalCtx.globalCompositeOperation = 'destination-in'; // Keep parts of original that overlap with mask
-        tempOriginalCtx.drawImage(polyMaskCanvas, 0, 0); // Apply polygon mask
-        tempOriginalCtx.globalCompositeOperation = 'source-over'; // Reset composite operation
-
-        // E. Draw Scaled Foreground to Main Canvas
-        const aspect = originalImage.naturalWidth / originalImage.naturalHeight;
+        // 2. Draw Scaled Foreground Image to Main Canvas
+        // The foregroundImage already has transparency, so we just draw it.
+        // Calculate aspect ratio based on the foreground image (which is the subject).
+        const aspect = foregroundImage.naturalWidth / foregroundImage.naturalHeight;
         let drawWidth = targetWidth;
         let drawHeight = targetHeight;
 
-        if (targetWidth / targetHeight > aspect) { // Canvas is wider than image
+        // Adjust dimensions to fit within target, maintaining aspect ratio
+        if (targetWidth / targetHeight > aspect) { // Canvas is wider than image aspect ratio
             drawWidth = targetHeight * aspect;
-        } else { // Canvas is taller than image
+        } else { // Canvas is taller or same aspect ratio as image
             drawHeight = targetWidth / aspect;
         }
 
         const x = (targetWidth - drawWidth) / 2;
         const y = (targetHeight - drawHeight) / 2;
 
-        ctx.drawImage(tempOriginalCanvas, x, y, drawWidth, drawHeight);
-        console.log('Canvas redrawn with polygon-based masking.');
+        ctx.drawImage(foregroundImage, x, y, drawWidth, drawHeight);
+        console.log('Canvas redrawn with foreground image.');
     }
 
-    // Event Listeners
+    // Event Listeners (mostly unchanged)
     bgColorRadios.forEach(radio => {
         radio.addEventListener('change', redrawCanvas);
     });
@@ -186,8 +198,6 @@ document.addEventListener('DOMContentLoaded', () => {
     imgHeightInput.addEventListener('blur', redrawCanvas);
 
     downloadButton.addEventListener('click', () => {
-        // redrawCanvas(); // Optional: ensure canvas is up-to-date, but other events should handle this.
-
         const selectedMimeType = getSelectedFormat();
         let fileExtension = '.png';
         if (selectedMimeType === 'image/jpeg') {
@@ -198,11 +208,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let dataUrl;
         if (selectedMimeType === 'image/jpeg') {
-            dataUrl = canvas.toDataURL(selectedMimeType, 0.9); // 90% quality for JPEG
-        } else if (selectedMimeType === 'image/webp') {
-            dataUrl = canvas.toDataURL(selectedMimeType, 0.8); // 80% quality for WebP
-        } else { // PNG or any other format
-            dataUrl = canvas.toDataURL(selectedMimeType);
+            // Create a temporary canvas, draw white background, then foreground
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.fillStyle = getSelectedBgColor(); // Or force white if JPEG transparency is an issue
+            if (getSelectedBgColor() === 'transparent' && selectedMimeType === 'image/jpeg') {
+                 tempCtx.fillStyle = '#FFFFFF'; // Force white for JPEG if bg is transparent
+            } else {
+                tempCtx.fillStyle = getSelectedBgColor();
+            }
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            tempCtx.drawImage(canvas, 0, 0); // Draw the current canvas content (which has fg on bg)
+            dataUrl = tempCanvas.toDataURL(selectedMimeType, 0.9);
+        } else { // PNG or WebP can handle transparency directly from the main canvas
+            dataUrl = canvas.toDataURL(selectedMimeType, (selectedMimeType === 'image/webp' ? 0.8 : undefined));
         }
         
         const a = document.createElement('a');
@@ -214,46 +235,29 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Image download initiated for format:', selectedMimeType);
     });
 
-    // --- Initialization ---
     if (loadImagesFromStorage()) {
-        // Images will be loaded, and redrawCanvas will be called by onImageLoad
         console.log("Image loading initiated...");
     }
 
     if (reuploadButton) { 
         reuploadButton.addEventListener('click', () => {
-            reuploadFileInput.click(); 
+            // When re-uploading, we should go back to index.html to re-process the image
+            // because the background removal now happens in script.js
+            localStorage.removeItem('foregroundImageUrl'); // Clear old foreground
+            localStorage.removeItem('segmentationData'); // Clear any old segmentation data just in case
+            window.location.href = 'index.html';
         });
     }
 
-    reuploadFileInput.addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const newOriginalImageUrl = e.target.result;
-                
-                localStorage.setItem('originalImageUrl', newOriginalImageUrl);
-                
-                originalImage = new Image(); 
-                originalImage.onload = () => {
-                    console.log('Re-uploaded image loaded successfully.');
-                    if (imgWidthInput && imgHeightInput) {
-                        imgWidthInput.value = originalImage.naturalWidth;
-                        imgHeightInput.value = originalImage.naturalHeight;
-                    }
-                    redrawCanvas(); 
-                };
-                originalImage.onerror = () => {
-                    alert('Error loading re-uploaded image. Please try a different file.');
-                };
-                originalImage.src = newOriginalImageUrl;
-            };
-            reader.onerror = () => {
-                alert('Error reading the re-uploaded file.');
-            };
-            reader.readAsDataURL(file);
-        }
-        reuploadFileInput.value = null; 
-    });
+    // Remove the reuploadFileInput.addEventListener as re-upload now goes to index.html
+    // reuploadFileInput.addEventListener('change', (event) => { ... });
+    // The old logic for re-uploading directly on edit.html is no longer valid
+    // as background removal (the new @imgly/background-removal) is in script.js (on index.html)
+
+  window.addEventListener("beforeunload", () => {
+    if (foregroundImage && foregroundImage.src && foregroundImage.src.startsWith("blob:")) {
+      console.log("Revoking Object URL:", foregroundImage.src);
+      URL.revokeObjectURL(foregroundImage.src);
+    }
+  });
 });
