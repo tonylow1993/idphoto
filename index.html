@@ -12,14 +12,15 @@
     <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
 
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
     <script type="importmap">
-{
-  "imports": {
-    "onnxruntime-web": "/libs/onnxruntime-web/ort.min.mjs",
-    "@imgly/background-removal": "/libs/@imgly/background-removal/dist/index.mjs"
-  }
-}
-</script>
+    {
+      "imports": {
+        "onnxruntime-web": "/libs/onnxruntime-web/ort.min.mjs",
+        "@imgly/background-removal": "/libs/@imgly/background-removal/dist/index.mjs"
+      }
+    }
+    </script>
   </head>
   <body>
     <div class="relative flex size-full min-h-screen flex-col bg-white group/design-root overflow-x-hidden" style='font-family: Inter, "Noto Sans", sans-serif;'>
@@ -56,6 +57,11 @@
         </header>
         <div class="px-40 flex flex-1 justify-center py-5">
           <div class="layout-content-container flex flex-col max-w-[960px] flex-1">
+            <div id="loading-bar" style="display: none; text-align: center; padding: 20px;">
+              <p>Loading...</p>
+              <!-- Basic spinner -->
+              <div style="margin: auto; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite;"></div>
+            </div>
             <div class="@container">
               <div class="@[480px]:p-4">
                 <div

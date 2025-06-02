@@ -111,9 +111,9 @@ async function processImage(file) { // Changed to take file object
       loadingProgressBar.style.width = '0%';
       loadingProgressBar.textContent = '0%';
     }
-
+  
     const reader = new FileReader();
-
+  
     reader.onload = async (loadEvent) => {
         try {
             const originalImageUrl = loadEvent.target.result; // This is the Data URL
