@@ -30,10 +30,35 @@ const translations = {
     "ctaSubtitle": "Sign up today and start editing your photos with ease.",
     "termsLink": "Terms of Service",
     "privacyLink": "Privacy Policy",
-    "copyrightText": "@2024 Photo Studio. All rights reserved."
+    "copyrightText": "@2024 Photo Studio. All rights reserved.",
+
+    // Edit.html specific
+    "editPageTitle": "Edit Photo",
+    "uploadButtonNav": "Upload",
+    "editMainTitle": "Edit Your Photo",
+    "processingText": "Processing...",
+    "reuploadButton": "Re-upload Photo",
+    "bgColorSectionTitle": "Background Color",
+    "colorWhite": "White",
+    "colorLightBlue": "Light Blue",
+    "colorLightOrange": "Light Orange",
+    "colorLightPink": "Light Pink",
+    "colorLightPurple": "Light Purple",
+    "colorBlack": "Black",
+    "adjustSizeSectionTitle": "Adjust Size",
+    "widthLabel": "Width (px)",
+    "heightLabel": "Height (px)",
+    "sizePlaceholder": "e.g. 600",
+    "generateButton": "Generate",
+    "downloadFormatSectionTitle": "Download Format",
+    "formatJPEG": "JPEG",
+    "formatPNG": "PNG",
+    "formatWebP": "WebP",
+    "downloadButton": "Download",
+    "footerCopyrightEdit": "@ Photo Studio. All rights reserved." // Assuming year is handled separately if needed
   },
   zh_TW: {
-    "pageTitle": "Stitch Design", // Assuming brand name, might not translate or could be "Stitch Design - 相片工作室"
+    "pageTitle": "Stitch Design",
     "headerTitle": "相片工作室",
     "homeLink": "首頁",
     "getStartedButton": "開始使用",
@@ -62,6 +87,31 @@ const translations = {
     "ctaSubtitle": "立即註冊，輕鬆開始編輯您的相片。",
     "termsLink": "服務條款",
     "privacyLink": "隱私政策",
-    "copyrightText": "@2024 相片工作室。版權所有。"
+    "copyrightText": "@2024 相片工作室。版權所有。",
+
+    // Edit.html specific
+    "editPageTitle": "編輯相片",
+    "uploadButtonNav": "上傳",
+    "editMainTitle": "編輯您的相片",
+    "processingText": "處理中...",
+    "reuploadButton": "重新上傳相片",
+    "bgColorSectionTitle": "背景顏色",
+    "colorWhite": "白色",
+    "colorLightBlue": "淺藍色",
+    "colorLightOrange": "淺橙色",
+    "colorLightPink": "淺粉紅色",
+    "colorLightPurple": "淺紫色",
+    "colorBlack": "黑色",
+    "adjustSizeSectionTitle": "調整尺寸",
+    "widthLabel": "寬度 (像素)",
+    "heightLabel": "高度 (像素)",
+    "sizePlaceholder": "例如 600",
+    "generateButton": "生成",
+    "downloadFormatSectionTitle": "下載格式",
+    "formatJPEG": "JPEG",
+    "formatPNG": "PNG",
+    "formatWebP": "WebP",
+    "downloadButton": "下載",
+    "footerCopyrightEdit": "@ 相片工作室。版權所有。"
   }
 };

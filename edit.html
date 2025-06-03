@@ -18,7 +18,7 @@
       }
     }
     </script>
-    <title>Edit Photo</title>
+    <title data-translate="editPageTitle">Edit Photo</title>
     <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <style>
@@ -66,18 +66,18 @@
                 </defs>
               </svg>
             </div>
-            <h2 class="text-[#121416] text-lg font-bold leading-tight tracking-[-0.015em]">Photo Studio</h2>
+            <h2 class="text-[#121416] text-lg font-bold leading-tight tracking-[-0.015em]" data-translate="headerTitle">Photo Studio</h2>
           </a>
           <div class="flex flex-1 justify-end items-center gap-8"> <!-- Added items-center -->
             <div class="flex items-center gap-9">
-              <a class="text-[#121416] text-sm font-medium leading-normal" href="/" title="Home">Home</a>
+              <a class="text-[#121416] text-sm font-medium leading-normal" href="/" title="Home" data-translate="homeLink">Home</a>
             </div>
             <button
               class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-[#dce8f3] text-[#121416] text-sm font-bold leading-normal tracking-[0.015em] hover:bg-[#c9d8e7]"
               onclick="window.location.href='index.html'"
               title="Upload another photo"
             >
-              <span class="truncate">Upload</span>
+              <span class="truncate" data-translate="uploadButtonNav">Upload</span>
             </button>
             <div
               class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
@@ -89,11 +89,11 @@
         <div class="px-4 sm:px-10 md:px-20 lg:px-40 flex flex-1 justify-center py-5 bg-slate-50"> <!-- Responsive padding, bg color -->
           <div class="layout-content-container flex flex-col w-full max-w-[960px] flex-1 bg-white p-4 sm:p-6 rounded-lg shadow-lg">
             <div class="flex flex-wrap justify-between items-center gap-3 p-2 sm:p-4 border-b border-gray-200 mb-4">
-                <p class="text-[#121416] tracking-light text-2xl sm:text-3xl font-bold leading-tight">Edit Your Photo</p>
+                <p class="text-[#121416] tracking-light text-2xl sm:text-3xl font-bold leading-tight" data-translate="editMainTitle">Edit Your Photo</p>
             </div>
 
             <div id="edit-loading-indicator" style="display: none; margin-top: 20px; margin-bottom:20px; text-align: center;">
-              <p id="edit-loading-text" style="margin-bottom: 8px; font-size: 1em; color: #333;">Processing...</p>
+              <p id="edit-loading-text" style="margin-bottom: 8px; font-size: 1em; color: #333;" data-translate="processingText">Processing...</p>
               <div id="edit-loading-bar-container" style="width: 90%; max-width: 500px; background-color: #f0f0f0; border: 1px solid #ccc; border-radius: 6px; margin: auto; padding: 2px;">
                 <div id="edit-loading-bar-progress" style="width: 0%; height: 24px; background-color: #0c7ff2; border-radius: 4px; text-align: center; color: white; line-height: 24px; font-weight: bold; transition: width 0.2s ease-in-out;">
                   0%
@@ -112,15 +112,16 @@
                     id="reuploadButton"
                     class="flex min-w-[84px] max-w-[320px] sm:max-w-[480px] w-full sm:w-auto cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-[#e9edf1] hover:bg-[#dce4ec] text-[#111518] text-sm font-bold leading-normal tracking-[0.015em] transition-colors"
                 >
-                    <span class="truncate">Re-upload Photo</span>
+                    <span class="truncate" data-translate="reuploadButton">Re-upload Photo</span>
                 </button>
             </div>
-            <h3 class="text-[#121416] text-md sm:text-lg font-bold leading-tight tracking-[-0.015em] px-2 sm:px-4 pb-2 pt-2 sm:pt-4">Background Color</h3>
+            <h3 class="text-[#121416] text-md sm:text-lg font-bold leading-tight tracking-[-0.015em] px-2 sm:px-4 pb-2 pt-2 sm:pt-4" data-translate="bgColorSectionTitle">Background Color</h3>
             <div class="flex flex-wrap gap-3 sm:gap-5 p-2 sm:p-4">
               <label
                 class="relative size-8 sm:size-10 rounded-full border border-[#dde1e3] ring-offset-2 ring-sky-400 has-[:checked]:border-[3px] has-[:checked]:border-white has-[:checked]:ring-2 cursor-pointer transition-all"
                 style="background-color: rgb(255, 255, 255);"
                 title="White"
+                data-translate-title="colorWhite"
               >
                 <input type="radio" name="bgColor" value="#FFFFFF" checked />
               </label>
@@ -128,6 +129,7 @@
                 class="relative size-8 sm:size-10 rounded-full border border-[#dde1e3] ring-offset-2 ring-sky-400 has-[:checked]:border-[3px] has-[:checked]:border-white has-[:checked]:ring-2 cursor-pointer transition-all"
                 style="background-color: rgb(224, 247, 250);"
                 title="Light Blue"
+                data-translate-title="colorLightBlue"
               >
                 <input type="radio" name="bgColor" value="#E0F7FA" />
               </label>
@@ -135,6 +137,7 @@
                 class="relative size-8 sm:size-10 rounded-full border border-[#dde1e3] ring-offset-2 ring-sky-400 has-[:checked]:border-[3px] has-[:checked]:border-white has-[:checked]:ring-2 cursor-pointer transition-all"
                 style="background-color: rgb(255, 243, 224);"
                 title="Light Orange"
+                data-translate-title="colorLightOrange"
               >
                 <input type="radio" name="bgColor" value="#FFF3E0" />
               </label>
@@ -142,6 +145,7 @@
                 class="relative size-8 sm:size-10 rounded-full border border-[#dde1e3] ring-offset-2 ring-sky-400 has-[:checked]:border-[3px] has-[:checked]:border-white has-[:checked]:ring-2 cursor-pointer transition-all"
                 style="background-color: rgb(252, 228, 236);"
                 title="Light Pink"
+                data-translate-title="colorLightPink"
               >
                 <input type="radio" name="bgColor" value="#FCE4EC" />
               </label>
@@ -149,6 +153,7 @@
                 class="relative size-8 sm:size-10 rounded-full border border-[#dde1e3] ring-offset-2 ring-sky-400 has-[:checked]:border-[3px] has-[:checked]:border-white has-[:checked]:ring-2 cursor-pointer transition-all"
                 style="background-color: rgb(232, 234, 246);"
                 title="Light Purple"
+                data-translate-title="colorLightPurple"
               >
                 <input type="radio" name="bgColor" value="#E8EAF6" />
               </label>
@@ -156,29 +161,32 @@
                 class="relative size-8 sm:size-10 rounded-full border border-[#dde1e3] ring-offset-2 ring-sky-400 has-[:checked]:border-[3px] has-[:checked]:border-white has-[:checked]:ring-2 cursor-pointer transition-all"
                 style="background-color: rgb(0, 0, 0);"
                 title="Black"
+                data-translate-title="colorBlack"
               >
                 <input type="radio" name="bgColor" value="#000000" />
               </label>
             </div>
             
-            <h3 class="text-[#121416] text-md sm:text-lg font-bold leading-tight tracking-[-0.015em] px-2 sm:px-4 pb-2 pt-2 sm:pt-4">Adjust Size</h3>
+            <h3 class="text-[#121416] text-md sm:text-lg font-bold leading-tight tracking-[-0.015em] px-2 sm:px-4 pb-2 pt-2 sm:pt-4" data-translate="adjustSizeSectionTitle">Adjust Size</h3>
             <div class="flex max-w-[480px] flex-wrap items-end gap-3 sm:gap-4 px-2 sm:px-4 py-3">
               <label class="flex flex-col min-w-[120px] sm:min-w-40 flex-1">
-                <p class="text-[#121416] text-sm sm:text-base font-medium leading-normal pb-1 sm:pb-2">Width (px)</p>
+                <p class="text-[#121416] text-sm sm:text-base font-medium leading-normal pb-1 sm:pb-2" data-translate="widthLabel">Width (px)</p>
                 <input
                   id="imgWidth"
                   type="number"
                   class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#121416] focus:outline-0 focus:ring-0 border border-[#dde1e3] bg-white focus:border-[#a0aec0] h-10 sm:h-14 placeholder:text-[#6a7681] p-2 sm:p-[15px] text-sm sm:text-base font-normal leading-normal"
                   placeholder="e.g. 600"
+                  data-translate-placeholder="sizePlaceholder"
                 />
               </label>
               <label class="flex flex-col min-w-[120px] sm:min-w-40 flex-1">
-                <p class="text-[#121416] text-sm sm:text-base font-medium leading-normal pb-1 sm:pb-2">Height (px)</p>
+                <p class="text-[#121416] text-sm sm:text-base font-medium leading-normal pb-1 sm:pb-2" data-translate="heightLabel">Height (px)</p>
                 <input
                   id="imgHeight"
                   type="number"
                   class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#121416] focus:outline-0 focus:ring-0 border border-[#dde1e3] bg-white focus:border-[#a0aec0] h-10 sm:h-14 placeholder:text-[#6a7681] p-2 sm:p-[15px] text-sm sm:text-base font-normal leading-normal"
                   placeholder="e.g. 600"
+                  data-translate-placeholder="sizePlaceholder"
                 />
               </label>
             </div>
@@ -188,26 +196,29 @@
                 id="generateButton"
                 class="flex min-w-[84px] w-full sm:w-auto max-w-[320px] sm:max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 sm:h-12 px-4 bg-[#0c7ff2] hover:bg-[#0a6fdb] text-white text-sm sm:text-base font-bold leading-normal tracking-[0.015em] transition-colors"
               >
-                <span class="truncate">Generate</span>
+                <span class="truncate" data-translate="generateButton">Generate</span>
               </button>
             </div>
             
-            <h3 class="text-[#121416] text-md sm:text-lg font-bold leading-tight tracking-[-0.015em] px-2 sm:px-4 pb-2 pt-2 sm:pt-4">Download Format</h3>
+            <h3 class="text-[#121416] text-md sm:text-lg font-bold leading-tight tracking-[-0.015em] px-2 sm:px-4 pb-2 pt-2 sm:pt-4" data-translate="downloadFormatSectionTitle">Download Format</h3>
             <div class="flex flex-wrap gap-2 sm:gap-3 p-2 sm:p-4">
               <label
                 class="text-xs sm:text-sm font-medium leading-normal flex items-center justify-center rounded-xl border border-[#dde1e3] px-3 sm:px-4 h-9 sm:h-11 text-[#121416] has-[:checked]:border-[3px] has-[:checked]:px-2.5 sm:has-[:checked]:px-3.5 has-[:checked]:border-[#82aef5] relative cursor-pointer transition-all"
+                data-translate="formatJPEG"
               >
                 JPEG
                 <input type="radio" name="downloadFormat" value="image/jpeg" />
               </label>
               <label
                 class="text-xs sm:text-sm font-medium leading-normal flex items-center justify-center rounded-xl border border-[#dde1e3] px-3 sm:px-4 h-9 sm:h-11 text-[#121416] has-[:checked]:border-[3px] has-[:checked]:px-2.5 sm:has-[:checked]:px-3.5 has-[:checked]:border-[#82aef5] relative cursor-pointer transition-all"
+                data-translate="formatPNG"
               >
                 PNG
                 <input type="radio" name="downloadFormat" value="image/png" checked />
               </label>
               <label
                 class="text-xs sm:text-sm font-medium leading-normal flex items-center justify-center rounded-xl border border-[#dde1e3] px-3 sm:px-4 h-9 sm:h-11 text-[#121416] has-[:checked]:border-[3px] has-[:checked]:px-2.5 sm:has-[:checked]:px-3.5 has-[:checked]:border-[#82aef5] relative cursor-pointer transition-all"
+                data-translate="formatWebP"
               >
                 WebP
                 <input type="radio" name="downloadFormat" value="image/webp" />
@@ -219,7 +230,7 @@
                 id="downloadButton"
                 class="flex min-w-[84px] w-full sm:w-auto max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 sm:h-12 px-4 bg-[#0c7ff2] hover:bg-[#0a6fdb] text-white text-sm sm:text-base font-bold leading-normal tracking-[0.015em] transition-colors"
               >
-                <span class="truncate">Download</span>
+                <span class="truncate" data-translate="downloadButton">Download</span>
               </button>
             </div>
           </div>
@@ -228,15 +239,16 @@
           <div class="flex max-w-[960px] flex-1 flex-col">
             <footer class="flex flex-col gap-6 px-5 py-10 text-center @container">
               <div class="flex flex-wrap items-center justify-center gap-6 @[480px]:flex-row @[480px]:justify-around">
-                <a class="text-[#60758a] text-base font-normal leading-normal min-w-40" href="terms-of-service.html">Terms of Service</a>
-                <a class="text-[#60758a] text-base font-normal leading-normal min-w-40" href="privacy-policy.html">Privacy Policy</a>
+                <a class="text-[#60758a] text-base font-normal leading-normal min-w-40" href="terms-of-service.html" data-translate="termsLink">Terms of Service</a>
+                <a class="text-[#60758a] text-base font-normal leading-normal min-w-40" href="privacy-policy.html" data-translate="privacyLink">Privacy Policy</a>
               </div>
-              <p class="text-[#60758a] text-base font-normal leading-normal">@<span id="footerYear"></span> Photo Studio. All rights reserved.</p>
+              <p class="text-[#60758a] text-base font-normal leading-normal">@<span id="footerYear"></span><span data-translate="copyrightText"> Photo Studio. All rights reserved.</span></p>
             </footer>
           </div>
         </footer>
       </div>
     </div>
+    <script src="i18n.js"></script>
     <script type="module" src="edit.js"></script>
     <script>
         // Ensure this doesn't conflict if edit.js has similar logic or if there's already a script tag
