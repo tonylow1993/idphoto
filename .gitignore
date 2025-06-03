@@ -1,1 +1,33 @@
+# Node.js
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.env
+*.env.local
+*.env.development.local
+*.env.test.local
+*.env.production.local
+
+# Azure Functions (if applicable)
+local.settings.json
+# If you have a template for local.settings.json, don't ignore the template itself:
+# !local.settings.template.json
+
+# Other sensitive or environment-specific config files
+# e.g., if your custom settings.json contains secrets:
+# config/settings.production.json
+# my_app_secrets.json
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# Build output
+dist/
+build/
+out/
+coverage/
+
+# Others
+.vscode/
