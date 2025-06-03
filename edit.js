@@ -1,6 +1,48 @@
 // edit.js
 import { removeBackground } from '@imgly/background-removal';
 
+// Function to apply translations to the page
+function applyTranslations() {
+  const currentLang = localStorage.getItem('selectedLanguage') || 'zh_TW'; // Default to zh_TW
+  // Ensure translations object is available (it's loaded via i18n.js script tag)
+  if (typeof translations === 'undefined' || !translations[currentLang]) {
+    console.error(`Translations not found for language: ${currentLang} or translations object not loaded.`);
+    return;
+  }
+  const langStrings = translations[currentLang];
+
+  document.querySelectorAll('[data-translate]').forEach(element => {
+    const key = element.getAttribute('data-translate');
+    if (langStrings[key]) {
+      if (element instanceof HTMLTitleElement) {
+        document.title = langStrings[key];
+      } else {
+        element.textContent = langStrings[key];
+      }
+    } else {
+      console.warn(`Translation key not found for 'data-translate': ${key} in language: ${currentLang}`);
+    }
+  });
+
+  document.querySelectorAll('[data-translate-title]').forEach(element => {
+    const key = element.getAttribute('data-translate-title');
+    if (langStrings[key]) {
+      element.setAttribute('title', langStrings[key]);
+    } else {
+      console.warn(`Translation key not found for 'data-translate-title': ${key} in language: ${currentLang}`);
+    }
+  });
+
+  document.querySelectorAll('[data-translate-placeholder]').forEach(element => {
+    const key = element.getAttribute('data-translate-placeholder');
+    if (langStrings[key]) {
+      element.setAttribute('placeholder', langStrings[key]);
+    } else {
+      console.warn(`Translation key not found for 'data-translate-placeholder': ${key} in language: ${currentLang}`);
+    }
+  });
+}
+
 const DB_NAME = "ImageEditorDB";
 const STORE_NAME = "processedImages";
 const DB_VERSION = 1;
@@ -37,6 +79,9 @@ function getImageFromDB(db, key) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Apply translations as soon as the DOM is loaded and i18n.js should be available
+    applyTranslations();
+
     const canvas = document.getElementById('imageCanvas');
     const ctx = canvas.getContext('2d');
     const imgWidthInput = document.getElementById('imgWidth');
