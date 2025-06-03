@@ -230,3 +230,13 @@ async function processImage(file) { // Changed to take file object
     });
   }
 });
+
+// Add this to the end of script.js for testing
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    openImageDB,
+    saveImageToDB,
+    getImageFromDB,
+    // processImage // if we want to test this too, though it's more complex
+  };
+}
