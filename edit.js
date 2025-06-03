@@ -5,7 +5,7 @@ const DB_NAME = "ImageEditorDB";
 const STORE_NAME = "processedImages";
 const DB_VERSION = 1;
 
-function openImageDB() {
+export function openImageDB() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = (event) => {
@@ -22,7 +22,7 @@ function openImageDB() {
   });
 }
 
-function getImageFromDB(db, key) {
+export function getImageFromDB(db, key) {
   return new Promise((resolve, reject) => {
     if (!db) { reject("DB not initialized"); return; }
     const transaction = db.transaction([STORE_NAME], "readonly");
