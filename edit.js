@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const imageSourceForRemoval = originalImage.src; // Assumes originalImage.src is suitable
 
                 const config = {
-                    // publicPath: '/libs/@imgly/background-removal/dist/', // Uncomment if assets are not found
+                    publicPath: '/libs/', // Uncomment if assets are not found
                     debug: true, // Set to false for production
                     progress: (key, current, total) => {
                         const percent = total > 0 ? Math.round((current / total) * 100) : 0;
