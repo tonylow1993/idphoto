@@ -224,8 +224,27 @@
             </div>
           </div>
         </div>
+        <footer class="flex justify-center mt-10"> <!-- Added mt-10 for some spacing -->
+          <div class="flex max-w-[960px] flex-1 flex-col">
+            <footer class="flex flex-col gap-6 px-5 py-10 text-center @container">
+              <div class="flex flex-wrap items-center justify-center gap-6 @[480px]:flex-row @[480px]:justify-around">
+                <a class="text-[#60758a] text-base font-normal leading-normal min-w-40" href="terms-of-service.html">Terms of Service</a>
+                <a class="text-[#60758a] text-base font-normal leading-normal min-w-40" href="privacy-policy.html">Privacy Policy</a>
+              </div>
+              <p class="text-[#60758a] text-base font-normal leading-normal">@<span id="footerYear"></span> Photo Studio. All rights reserved.</p>
+            </footer>
+          </div>
+        </footer>
       </div>
     </div>
-    <script type="module" src="edit.js"></script>
+    <script src="edit.js"></script>
+    <script>
+        // Ensure this doesn't conflict if edit.js has similar logic or if there's already a script tag
+        const currentYear = new Date().getFullYear();
+        const footerYearEl = document.getElementById('footerYear');
+        if (footerYearEl) {
+            footerYearEl.textContent = currentYear;
+        }
+    </script>
   </body>
 </html>

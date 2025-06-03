@@ -13,6 +13,14 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+app.get('/terms-of-service.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'terms-of-service.html'));
+});
+
+app.get('/privacy-policy.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'privacy-policy.html'));
+});
+
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
 });
