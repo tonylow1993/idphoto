@@ -151,4 +151,82 @@ async function processImage(file) { // Changed to take file object
     };
     reader.readAsDataURL(file); // Read the file to get originalImageUrl
 }
+
+  // Language switcher logic
+  const languageSwitcherButton = document.getElementById('language-switcher');
+  const languageDropdown = document.getElementById('language-dropdown');
+
+  const updateLanguageButtonText = (langCode) => {
+    if (languageSwitcherButton) {
+      if (langCode === 'zh_TW') {
+        languageSwitcherButton.textContent = '繁體中文';
+      } else {
+        languageSwitcherButton.textContent = 'English';
+      }
+    }
+  };
+
+  // Function to apply translations to the page
+  function applyTranslations() {
+    const currentLang = localStorage.getItem('selectedLanguage') || 'zh_TW'; // Default to Traditional Chinese
+    // Ensure translations object is available (loaded from i18n.js)
+    if (typeof translations === 'undefined' || !translations[currentLang]) {
+      console.error(`Translations not found for language: ${currentLang} or translations object not loaded.`);
+      return;
+    }
+    const langStrings = translations[currentLang];
+
+    document.querySelectorAll('[data-translate]').forEach(element => {
+      const key = element.getAttribute('data-translate');
+      if (langStrings[key]) {
+        if (element instanceof HTMLTitleElement) {
+          document.title = langStrings[key];
+        } else {
+          element.textContent = langStrings[key];
+        }
+      } else {
+        console.warn(`Translation key not found: ${key} for language: ${currentLang}`);
+      }
+    });
+  }
+
+  if (languageSwitcherButton && languageDropdown) {
+    // Retrieve Selected Language on Load
+    const storedLanguage = localStorage.getItem('selectedLanguage');
+    if (storedLanguage) {
+      updateLanguageButtonText(storedLanguage);
+    } else {
+      localStorage.setItem('selectedLanguage', 'zh_TW'); // Default to Traditional Chinese
+      updateLanguageButtonText('zh_TW');
+    }
+    // Apply translations on initial page load
+    applyTranslations();
+
+    languageSwitcherButton.addEventListener('click', (event) => {
+      event.stopPropagation(); // Prevent click from immediately closing dropdown
+      languageDropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!languageDropdown.contains(event.target) && !languageSwitcherButton.contains(event.target)) {
+        languageDropdown.classList.add('hidden');
+      }
+    });
+
+    const languageLinks = languageDropdown.querySelectorAll('a[data-lang]');
+    languageLinks.forEach(link => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        const selectedLang = link.dataset.lang;
+        // const selectedLangText = link.textContent; // We'll use updateLanguageButtonText
+
+        localStorage.setItem('selectedLanguage', selectedLang);
+        updateLanguageButtonText(selectedLang);
+        languageDropdown.classList.add('hidden');
+
+        // Reload the page to apply language change
+        location.reload();
+      });
+    });
+  }
 });
