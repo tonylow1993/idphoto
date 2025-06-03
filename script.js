@@ -1,8 +1,5 @@
 // script.js
 
-// Add this import at the top of the file
-import { removeBackground } from '@imgly/background-removal'; // Uses import map
-
 const DB_NAME = "ImageEditorDB";
 const STORE_NAME = "processedImages";
 const DB_VERSION = 1;
@@ -120,45 +117,16 @@ async function processImage(file) { // Changed to take file object
             localStorage.setItem('originalImageUrl', originalImageUrl);
             console.log('Original image loaded for preview and local storage:', originalImageUrl.substring(0, 50) + '...');
 
-            // --- Start: New background removal logic ---
-            console.log("Attempting client-side background removal...");
-            // The library might prefer a File/Blob object directly, or a URL.
-            // Let's try with originalImageUrl (Data URL) first as per documentation examples.
-            // If this causes issues, we can try with the 'file' object directly if the library supports it,
-            // or convert the Data URL to a Blob first.
-            const blob = await removeBackground(originalImageUrl, {
-                // publicPath: `${window.location.origin}/libs/@imgly/background-removal/dist/`, // Removed to test default CDN behavior
-                debug: true, // Or false for production
-                progress: (key, current, total) => {
-                  console.log(`Loading asset: ${key} - ${current} / ${total}`);
-                  if (loadingText) loadingText.textContent = `Loading asset: ${key}...`;
-                  if (loadingProgressBar) {
-                    const percent = total > 0 ? Math.round((current / total) * 100) : 0;
-                    loadingProgressBar.style.width = percent + '%';
-                    loadingProgressBar.textContent = percent + '%';
-                  }
-                  if (current === total) { // When a particular asset is done
-                     if (loadingText) loadingText.textContent = `Processing image...`;
-                     // Optional: Keep progress bar full or show indeterminate state for a moment
-                     if (loadingProgressBar && total > 0) { // Ensure it shows 100% for this asset
-                        loadingProgressBar.style.width = '100%';
-                        loadingProgressBar.textContent = '100%';
-                     }
-                  }
-                }
-            });
+            // Convert Data URL to Blob
+            const response = await fetch(originalImageUrl);
+            const originalImageBlob = await response.blob();
 
-            if (loadingText) loadingText.textContent = 'Finalizing...'; // After removeBackground completes
-            if (loadingProgressBar) { // Show a near complete or indeterminate state
-                loadingProgressBar.style.width = '99%';
-                loadingProgressBar.textContent = '99%';
-            }
-
-            console.log("Foreground image blob received, attempting to save to IndexedDB...");
+            console.log("Original image blob created, attempting to save to IndexedDB...");
             const db = await openImageDB();
-            await saveImageToDB(db, "foregroundImage", blob);
-            console.log("Foreground image saved to IndexedDB successfully.");
-            // originalImageUrl is still in localStorage, foregroundImage is in IndexedDB
+            await saveImageToDB(db, "originalImageFile", originalImageBlob);
+            console.log("Original image saved to IndexedDB successfully as originalImageFile.");
+
+            // originalImageUrl is in localStorage, originalImageFile is in IndexedDB
 
             if (loadingText) loadingText.textContent = "Processing complete! Redirecting...";
             // Optional: Set progress to 100% explicitly here if not already
@@ -168,10 +136,9 @@ async function processImage(file) { // Changed to take file object
             }
 
             window.location.href = 'edit.html';
-            // --- End: New background removal logic ---
 
         } catch (error) {
-            console.error("Error during client-side background removal or DB operation:", error);
+            console.error("Error processing image or saving to DB:", error);
             alert("Error processing image or saving to DB. Details: " + (error.message || error));
         } finally {
             if (loadingIndicator) loadingIndicator.style.display = 'none';
