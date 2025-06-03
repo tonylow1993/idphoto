@@ -1,8 +1,8 @@
 // i18n.js
 const translations = {
   en: {
-    "pageTitle": "Stitch Design",
-    "headerTitle": "Photo Studio",
+    "pageTitle": "ID Photo",
+    "headerTitle": "ID Photo",
     "homeLink": "Home",
     "getStartedButton": "Get Started",
     "heroTitle": "Create Perfect ID Photos",
@@ -30,7 +30,7 @@ const translations = {
     "ctaSubtitle": "Sign up today and start editing your photos with ease.",
     "termsLink": "Terms of Service",
     "privacyLink": "Privacy Policy",
-    "copyrightText": "@2024 Photo Studio. All rights reserved.",
+    "copyrightText": "@2024 ID Photo. All rights reserved.",
 
     // Edit.html specific
     "editPageTitle": "Edit Photo",
@@ -55,10 +55,10 @@ const translations = {
     "formatPNG": "PNG",
     "formatWebP": "WebP",
     "downloadButton": "Download",
-    "footerCopyrightEdit": "@ Photo Studio. All rights reserved." // Assuming year is handled separately if needed
+    "footerCopyrightEdit": "@ ID Photo. All rights reserved." // Assuming year is handled separately if needed
   },
   zh_TW: {
-    "pageTitle": "Stitch Design",
+    "pageTitle": "ID Photo",
     "headerTitle": "相片工作室",
     "homeLink": "首頁",
     "getStartedButton": "開始使用",

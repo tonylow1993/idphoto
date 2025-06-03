@@ -1,6 +1,6 @@
 # idphoto
 
-"ID Photo Generator"
+"ID Photo"
 
 - Allow user to upload portrait photo.
 - Remove and change background to pure color.
