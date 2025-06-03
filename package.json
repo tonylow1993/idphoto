@@ -4,7 +4,8 @@
   "description": "A Node.js server to host the ID photo website.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "prestart": "npm install"
   },
   "keywords": [],
   "author": "",
