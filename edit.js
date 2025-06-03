@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     reuploadFileInput.style.display = 'none';
     document.body.appendChild(reuploadFileInput);
 
-    let originalImage = null; 
+    let originalImage = null;
     let originalImageLoaded = false;
     let foregroundImage = null; // To store the result of background removal
 
@@ -70,14 +70,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!originalImageUrlFromStorage) {
             alert('Error: Original image URL not found in local storage. Please upload an image first.');
             window.location.href = 'index.html';
-            return false; 
+            return false;
         }
 
         function checkLoadCompletion() {
             // Only waiting for original image now. Foreground is loaded/generated later.
             if (originalImageLoaded) {
                 console.log('Original image loaded.');
-                if (originalImage) { 
+                if (originalImage) {
                     imgWidthInput.value = originalImage.naturalWidth;
                     imgHeightInput.value = originalImage.naturalHeight;
                 }
@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).then(originalImageBlob => {
           if (originalImageBlob) {
             console.log("Original image blob retrieved from IndexedDB.");
-            originalImage = new Image(); 
+            originalImage = new Image();
             originalImage.onload = () => {
               originalImageLoaded = true; // Flag updated
               checkLoadCompletion();
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
             originalImage.onerror = () => {
                 alert("Error loading original image from Blob. Please try re-uploading.");
                 console.error("Error event for originalImage.src:", originalImage.src);
-                window.location.href = 'index.html'; 
+                window.location.href = 'index.html';
             };
             originalImage.src = URL.createObjectURL(originalImageBlob);
           } else {
@@ -153,19 +153,19 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn('Original image not ready. Aborting redrawCanvas.');
             return;
         }
-    
+
         const targetWidth = parseInt(imgWidthInput.value) || originalImage.naturalWidth;
         const targetHeight = parseInt(imgHeightInput.value) || originalImage.naturalHeight;
-    
+
         canvas.width = targetWidth;
         canvas.height = targetHeight;
-    
+
         if (foregroundImage && foregroundImage.complete) {
             // Logic for drawing foregroundImage on selected background
             const newBgColor = getSelectedBgColor();
             ctx.fillStyle = newBgColor;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
+
             const aspect = foregroundImage.naturalWidth / foregroundImage.naturalHeight;
             let drawWidth = targetWidth;
             let drawHeight = targetHeight;
@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Logic for drawing originalImage with a default background
             ctx.fillStyle = '#e5e7eb'; // Default neutral background (same as canvas container)
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
+
             const aspect = originalImage.naturalWidth / originalImage.naturalHeight;
             let drawWidth = targetWidth;
             let drawHeight = targetHeight;
@@ -269,21 +269,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert("Original image is not loaded yet. Please wait or try re-uploading.");
                 return;
             }
-        
+
             editLoadingIndicator.style.display = 'block';
             editLoadingText.textContent = 'Initializing...';
             editLoadingProgressBar.style.width = '0%';
             editLoadingProgressBar.textContent = '0%';
-        
+
             try {
                 // Revoke previous foregroundImage blob URL if it exists
                 if (foregroundImage && foregroundImage.src && foregroundImage.src.startsWith('blob:')) {
                     console.log("Revoking previous foregroundImage Object URL:", foregroundImage.src);
                     URL.revokeObjectURL(foregroundImage.src);
                 }
-        
+
                 const imageSourceForRemoval = originalImage.src; // Assumes originalImage.src is suitable
-        
+
                 const config = {
                     // publicPath: '/libs/@imgly/background-removal/dist/', // Uncomment if assets are not found
                     debug: true, // Set to false for production
@@ -299,14 +299,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 };
-                
+
                 editLoadingText.textContent = 'Starting background removal process...';
                 const processedBlob = await removeBackground(imageSourceForRemoval, config);
-        
+
                 editLoadingText.textContent = 'Image processed. Loading result...';
                 editLoadingProgressBar.style.width = '100%';
                 editLoadingProgressBar.textContent = '100%';
-        
+
                 const newFgImage = new Image();
                 newFgImage.onload = () => {
                     foregroundImage = newFgImage; // Assign to global
@@ -319,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     editLoadingIndicator.style.display = 'none';
                 };
                 newFgImage.src = URL.createObjectURL(processedBlob);
-        
+
             } catch (error) {
                 console.error("Error during background removal:", error);
                 alert("Error removing background: " + (error.message || error));
